@@ -1,0 +1,2 @@
+# TemporaryMQTT
+对PahoMQTT进行二次封装，通过bindService的方式可以启动一个临时的MQTT，在不需要时可以关闭

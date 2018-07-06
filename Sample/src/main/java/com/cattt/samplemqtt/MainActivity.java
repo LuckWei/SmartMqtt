@@ -1,4 +1,4 @@
-package com.hcb.samplemqtt;
+package com.cattt.samplemqtt;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;

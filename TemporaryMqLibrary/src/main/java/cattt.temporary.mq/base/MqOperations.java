@@ -4,5 +4,6 @@ public enum MqOperations {
     DISCONNECT,
     CONNECT,
     SUBSCRIBE,
-    UNSUBSCRIBE
+    UNSUBSCRIBE,
+    PUBLISH,
 }

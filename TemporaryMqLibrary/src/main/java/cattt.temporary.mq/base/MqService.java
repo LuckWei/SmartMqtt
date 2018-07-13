@@ -5,13 +5,14 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.PowerManager;
 
 import cattt.temporary.mq.MqConfigure;
 import cattt.temporary.mq.MqMessageMonitor;
 import cattt.temporary.mq.MqStateMonitor;
+import cattt.temporary.mq.base.model.IMqConnectionAble;
 import cattt.temporary.mq.logger.Log;
 
-import org.eclipse.paho.android.service.MqttService;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -20,7 +21,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.concurrent.TimeUnit;
 
-public class MqService extends Service implements MqttCallbackExtended, IMqttActionListener {
+public class MqService extends Service implements MqttCallbackExtended {
     private static final int MSG_CODE_RECONNECT = 10000;
     public static final String ACTION = "com.hcb.phmq.base.MqService.ACTION_CONNECTION_MQTT";
     public static final String CATEGORY = "GlOy2CInGKY0PmZg785wzdBbWI5id4BQKgva6G7g3UjEKPkWByPEL7XIPTNHEv5O";
@@ -28,7 +29,8 @@ public class MqService extends Service implements MqttCallbackExtended, IMqttAct
 
     private MqBinder mMqBinder;
     private MqHandler handler;
-    private MqConnection mMqConnection;
+    private IMqConnectionAble mMqConnection;
+    private PowerManager.WakeLock wakelock;
 
     @Override
     public void onCreate() {
@@ -76,18 +78,18 @@ public class MqService extends Service implements MqttCallbackExtended, IMqttAct
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        mMqConnection.acquireWakeLock();
+        acquireWakeLock();
         final byte[] bytes = message.getPayload();
         if (bytes == null) {
-            mMqConnection.releaseWakeLock();
+            releaseWakeLock();
             return;
         }
         if (bytes.length <= 0) {
-            mMqConnection.releaseWakeLock();
+            releaseWakeLock();
             return;
         }
         MqMessageMonitor.get().onMessageArrivedOfMessage(topic, new String(bytes));
-        mMqConnection.releaseWakeLock();
+        releaseWakeLock();
     }
 
     @Override
@@ -95,37 +97,128 @@ public class MqService extends Service implements MqttCallbackExtended, IMqttAct
 
     }
 
-    @Override
-    public void onSuccess(IMqttToken iToken) {
-        if (mMqConnection != null) {
-            mMqConnection.acquireWakeLock();
-            if (iToken.getUserContext() != null && iToken.getUserContext() instanceof MqOperations) {
-                MqOperations opt = (MqOperations) iToken.getUserContext();
-                logger.i("onSuccess %s", opt);
-            }
-            mMqConnection.releaseWakeLock();
+    protected final IMqttActionListener mDisconnectListener = new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken token) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.i("onSuccess %s", opt);
+            releaseWakeLock();
+        }
+
+        @Override
+        public void onFailure(IMqttToken token, Throwable ex) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.w(String.format("onFailure %s", opt), ex);
+            releaseWakeLock();
+        }
+    };
+
+    protected final IMqttActionListener mConnectListener = new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken token) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.i("onSuccess %s", opt);
+            releaseWakeLock();
+        }
+
+        @Override
+        public void onFailure(IMqttToken token, Throwable ex) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.w(String.format("onFailure %s", opt), ex);
+            handler.sendEmptyMessageDelayed(MSG_CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3));
+            releaseWakeLock();
+        }
+    };
+
+    protected final IMqttActionListener mSubscribeListener = new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken token) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.i("onSuccess %s", opt);
+            releaseWakeLock();
+        }
+
+        @Override
+        public void onFailure(IMqttToken token, Throwable ex) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.w(String.format("onFailure %s", opt), ex);
+            releaseWakeLock();
+        }
+    };
+
+    protected final IMqttActionListener mUnsubscribeListener = new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken token) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.i("onSuccess %s", opt);
+            releaseWakeLock();
+        }
+
+        @Override
+        public void onFailure(IMqttToken token, Throwable ex) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.w(String.format("onFailure %s", opt), ex);
+            releaseWakeLock();
+        }
+    };
+
+    protected final IMqttActionListener mPublishListener = new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken token) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.i("onSuccess %s", opt);
+            releaseWakeLock();
+        }
+
+        @Override
+        public void onFailure(IMqttToken token, Throwable ex) {
+            acquireWakeLock();
+            MqOperations opt = (MqOperations) token.getUserContext();
+            logger.w(String.format("onFailure %s", opt), ex);
+            releaseWakeLock();
+        }
+    };
+
+
+    /**
+     * Releases the currently held wake lock for this client
+     */
+    public void releaseWakeLock() {
+        if (wakelock != null && wakelock.isHeld()) {
+            wakelock.release();
         }
     }
 
-    @Override
-    public void onFailure(final IMqttToken iToken, Throwable ex) {
-        if (mMqConnection != null) {
-            mMqConnection.acquireWakeLock();
-            if (iToken.getUserContext() != null && iToken.getUserContext() instanceof MqOperations) {
-                MqOperations opt = (MqOperations) iToken.getUserContext();
-                logger.w(String.format("onFailure %s", opt), ex);
-                switch (opt) {
-                    case CONNECT:
-                        handler.sendEmptyMessage(MSG_CODE_RECONNECT);
-                        break;
-                }
-            }
-            mMqConnection.releaseWakeLock();
+    /**
+     * Acquires a partial wake lock for this client
+     */
+    public void acquireWakeLock() {
+        if (wakelock == null) {
+            PowerManager pm = (PowerManager) getApplicationContext().getSystemService(Service.POWER_SERVICE);
+            wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, mMqConnection.getWakeLockTag());
         }
+        wakelock.acquire();
+    }
+
+    public boolean isConnected(){
+        return mMqConnection.isConnected();
     }
 
     public void startConnect() {
         mMqConnection.connect();
+    }
+
+    public void publishMessage(String topic, String message) {
+        mMqConnection.publish(topic, message);
     }
 
     private static class MqHandler extends Handler {

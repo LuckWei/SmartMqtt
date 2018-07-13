@@ -1,5 +1,8 @@
 package cattt.temporary.mq;
 
+import cattt.temporary.mq.base.enums.QosClub;
+import cattt.temporary.mq.base.model.QosType;
+
 public class MqConfigure {
     public static String userName = "guest";
     public static String password = "guest";
@@ -12,4 +15,6 @@ public class MqConfigure {
      * value is qos
      */
     public static String[] topics = null;
+    @QosClub
+    public static int qos = QosType.NORMAL;
 }

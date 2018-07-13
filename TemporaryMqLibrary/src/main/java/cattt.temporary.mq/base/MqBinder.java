@@ -11,4 +11,12 @@ public class MqBinder extends Binder {
     public void startConnect(){
         mService.startConnect();
     }
+
+    public void publishMessage(String topic, String message){
+        mService.publishMessage(topic, message);
+    }
+
+    public boolean isConnected(){
+        return mService.isConnected();
+    }
 }

@@ -1,10 +1,9 @@
 package cattt.temporary.mq.base;
 
-import android.app.Service;
-import android.os.PowerManager;
+import android.text.TextUtils;
 
 import cattt.temporary.mq.MqConfigure;
-import cattt.temporary.mq.base.model.IMqConnectionable;
+import cattt.temporary.mq.base.model.IMqConnectionAble;
 import cattt.temporary.mq.logger.Log;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -12,14 +11,11 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import static org.eclipse.paho.android.service.MqttAndroidClient.Ack.AUTO_ACK;
 
-public class MqConnection implements IMqConnectionable {
+public class MqConnection implements IMqConnectionAble {
     private static Log logger = Log.getLogger(MqConnection.class);
-    private PowerManager.WakeLock wakelock;
+
     private String wakeLockTag;
 
     private MqService mService;
@@ -35,6 +31,13 @@ public class MqConnection implements IMqConnectionable {
         mClient.setCallback(mService);
     }
 
+
+    @Override
+    public String getWakeLockTag() {
+        return wakeLockTag;
+    }
+
+    @Override
     public boolean isConnected() {
         return mClient != null && mClient.isConnected();
     }
@@ -44,7 +47,7 @@ public class MqConnection implements IMqConnectionable {
         logger.i("connect");
         try {
             if (!isConnected()) {
-                mClient.connect(getMqttConnectOptions(), MqOperations.CONNECT, mService);
+                mClient.connect(getMqttConnectOptions(), MqOperations.CONNECT, mService.mConnectListener);
             }
         } catch (Exception ex) {
             logger.e("Unable to connect.", ex);
@@ -55,12 +58,12 @@ public class MqConnection implements IMqConnectionable {
     public void disconnect(long quiesceTimeout) {
         try {
             if (isConnected()) {
-                mClient.disconnect(quiesceTimeout, MqOperations.DISCONNECT, mService);
+                mClient.disconnect(quiesceTimeout, MqOperations.DISCONNECT, mService.mDisconnectListener);
             }
         } catch (Exception ex) {
             logger.e("Unable to disconnected.", ex);
         } finally {
-            releaseWakeLock();
+            mService.releaseWakeLock();
         }
     }
 
@@ -69,11 +72,24 @@ public class MqConnection implements IMqConnectionable {
         if (!isConnected()) {
             return;
         }
-        checkTopicArray(topic);
+        checkTopic(topic);
         try {
-            mClient.subscribe(topic, getQos(topic.length), MqOperations.SUBSCRIBE, mService);
+            mClient.subscribe(topic, getQos(topic.length), MqOperations.SUBSCRIBE, mService.mSubscribeListener);
         } catch (MqttException ex) {
             logger.e("Unable to subscribe.", ex);
+        }
+    }
+
+    @Override
+    public void publish(String topic, String message) {
+        if (!isConnected()) {
+            return;
+        }
+        checkTopic(topic);
+        try {
+            mClient.publish(topic, message.getBytes(), getQos(), true, MqOperations.PUBLISH, mService.mPublishListener);
+        } catch (Exception ex) {
+            logger.e("Unable to publish.", ex);
         }
     }
 
@@ -82,9 +98,9 @@ public class MqConnection implements IMqConnectionable {
         if (!isConnected()) {
             return;
         }
-        checkTopicArray(topic);
+        checkTopic(topic);
         try {
-            mClient.unsubscribe(topic, MqOperations.UNSUBSCRIBE, mService);
+            mClient.unsubscribe(topic, MqOperations.UNSUBSCRIBE, mService.mUnsubscribeListener);
         } catch (Exception ex) {
             logger.e("Unable to unsubscribe.", ex);
         }
@@ -117,27 +133,8 @@ public class MqConnection implements IMqConnectionable {
                 AUTO_ACK);
     }
 
-    /**
-     * Acquires a partial wake lock for this client
-     */
-    public void acquireWakeLock() {
-        if (wakelock == null) {
-            PowerManager pm = (PowerManager) mService.getSystemService(Service.POWER_SERVICE);
-            wakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, wakeLockTag);
-        }
-        wakelock.acquire();
-    }
 
-    /**
-     * Releases the currently held wake lock for this client
-     */
-    public void releaseWakeLock() {
-        if (wakelock != null && wakelock.isHeld()) {
-            wakelock.release();
-        }
-    }
-
-    private void checkTopicArray(String[] topic) {
+    private void checkTopic(String[] topic) {
         if (topic == null) {
             throw new NullPointerException("Topics Cannot be null.");
         }
@@ -147,11 +144,22 @@ public class MqConnection implements IMqConnectionable {
         }
     }
 
+    private void checkTopic(String topic) {
+        if (TextUtils.isEmpty(topic)) {
+            throw new NullPointerException("Topic Cannot be null.");
+        }
+    }
+
     private int[] getQos(int length) {
         final int[] qos = new int[length];
         for (int i = 0; i < qos.length; i++) {
-            qos[i] = 2;
+            qos[i] = getQos();
         }
         return qos;
+    }
+
+    @Override
+    public int getQos() {
+        return MqConfigure.qos;
     }
 }

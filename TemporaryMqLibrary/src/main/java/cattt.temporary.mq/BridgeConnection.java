@@ -6,6 +6,7 @@ import android.os.IBinder;
 import cattt.temporary.mq.base.BaseServiceConnection;
 import cattt.temporary.mq.base.MqBinder;
 import cattt.temporary.mq.base.MqService;
+import cattt.temporary.mq.base.ServiceConnectionException;
 import cattt.temporary.mq.callback.OnConnectionListener;
 import cattt.temporary.mq.logger.Log;
 
@@ -14,8 +15,8 @@ public class BridgeConnection extends BaseServiceConnection {
 
     private OnConnectionListener mListener;
 
-    public BridgeConnection addOnConnectionListener(OnConnectionListener listener){
-        if(listener == null){
+    public BridgeConnection addOnConnectionListener(OnConnectionListener listener) {
+        if (listener == null) {
             new NullPointerException("param cannot be null.");
         }
         this.mListener = listener;
@@ -41,12 +42,25 @@ public class BridgeConnection extends BaseServiceConnection {
         return MqService.CATEGORY;
     }
 
-    private void startConnect() {
+    private void startConnect() throws ServiceConnectionException {
         if (getBinder() == null) {
-            logger.e("Service is not connected");
-            return;
+            throw new ServiceConnectionException("Service is not connected");
         }
         ((MqBinder) getBinder()).startConnect();
+    }
+
+    public boolean isConnected() throws ServiceConnectionException {
+        if (getBinder() == null) {
+            throw new ServiceConnectionException("Service is not connected");
+        }
+        return ((MqBinder) getBinder()).isConnected();
+    }
+
+    public void publishMessage(String topic, String message) throws ServiceConnectionException {
+        if (getBinder() == null) {
+            throw new ServiceConnectionException("Service is not connected");
+        }
+        ((MqBinder) getBinder()).publishMessage(topic, message);
     }
 
     @Override

@@ -7,6 +7,7 @@ import cattt.temporary.mq.base.model.IMqConnectionAble;
 import cattt.temporary.mq.logger.Log;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -24,13 +25,18 @@ public class MqConnection implements IMqConnectionAble {
     protected MqConnection(MqService service) {
         this.mService = service;
         mClient = getMqttAndroidClient();
-        mClient.registerResources(service);
+        mClient.setTraceEnabled(MqConfigure.isTrace);
+        mClient.setTraceCallback(mService);
         wakeLockTag = new StringBuilder(this.getClass().getSimpleName())
                 .append("ClientId=").append(mClient.getClientId())
                 .append("ServerUri=").append(mClient.getServerURI()).toString();
         mClient.setCallback(mService);
     }
 
+
+    public MqttAndroidClient getMqClient(){
+        return mClient;
+    }
 
     @Override
     public String getWakeLockTag() {
@@ -47,6 +53,7 @@ public class MqConnection implements IMqConnectionAble {
         logger.i("connect");
         try {
             if (!isConnected()) {
+                mClient.registerResources(mService);
                 mClient.connect(getMqttConnectOptions(), MqOperations.CONNECT, mService.mConnectListener);
             }
         } catch (Exception ex) {
@@ -63,6 +70,7 @@ public class MqConnection implements IMqConnectionAble {
         } catch (Exception ex) {
             logger.e("Unable to disconnected.", ex);
         } finally {
+            mClient.unregisterResources();
             mService.releaseWakeLock();
         }
     }
@@ -116,6 +124,16 @@ public class MqConnection implements IMqConnectionAble {
         options.setKeepAliveInterval(10);
         options.setConnectionTimeout(30);
         options.setMaxInflight(100);
+        return options;
+    }
+
+    @Override
+    public DisconnectedBufferOptions getDisconnectedBufferOptions() {
+        DisconnectedBufferOptions options = new DisconnectedBufferOptions();
+        options.setBufferEnabled(true);
+        options.setBufferSize(5000);
+        options.setDeleteOldestMessages(true);
+        options.setPersistBuffer(true);
         return options;
     }
 

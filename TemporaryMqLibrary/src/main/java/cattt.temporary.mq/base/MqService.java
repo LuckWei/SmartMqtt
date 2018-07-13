@@ -13,6 +13,7 @@ import cattt.temporary.mq.MqStateMonitor;
 import cattt.temporary.mq.base.model.IMqConnectionAble;
 import cattt.temporary.mq.logger.Log;
 
+import org.eclipse.paho.android.service.MqttTraceHandler;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -21,7 +22,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.concurrent.TimeUnit;
 
-public class MqService extends Service implements MqttCallbackExtended {
+public class MqService extends Service implements MqttCallbackExtended, MqttTraceHandler {
     private static final int MSG_CODE_RECONNECT = 10000;
     public static final String ACTION = "com.hcb.phmq.base.MqService.ACTION_CONNECTION_MQTT";
     public static final String CATEGORY = "GlOy2CInGKY0PmZg785wzdBbWI5id4BQKgva6G7g3UjEKPkWByPEL7XIPTNHEv5O";
@@ -121,6 +122,7 @@ public class MqService extends Service implements MqttCallbackExtended {
             acquireWakeLock();
             MqOperations opt = (MqOperations) token.getUserContext();
             logger.i("onSuccess %s", opt);
+            mMqConnection.getMqClient().setBufferOpts(mMqConnection.getDisconnectedBufferOptions());
             releaseWakeLock();
         }
 
@@ -239,5 +241,21 @@ public class MqService extends Service implements MqttCallbackExtended {
                     break;
             }
         }
+    }
+
+    @Override
+    public void traceDebug(String tag, String message) {
+        logger.e("TraceDebug, tag[%s] message >>> %s", tag, message);
+    }
+
+    @Override
+    public void traceError(String tag, String message) {
+        logger.e("TraceError, tag[%s] message >>> %s", tag, message);
+
+    }
+
+    @Override
+    public void traceException(String tag, String message, Exception ex) {
+        logger.e(String.format("TraceException, tag[%s] message >>> %s", tag, message), ex);
     }
 }

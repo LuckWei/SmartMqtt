@@ -23,6 +23,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         findViewById(R.id.connectBtn).setOnClickListener(this);
         findViewById(R.id.disconnectBtn).setOnClickListener(this);
+        findViewById(R.id.sendMessageBtn).setOnClickListener(this);
+        findViewById(R.id.isConnectedBtn).setOnClickListener(this);
         MqMessageMonitor.get().addOnMqMessageListener(this);
     }
 
@@ -58,10 +60,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 logger.e("", ex);
             }
         }
+
+        if(R.id.sendMessageBtn == id){
+            MQ.publishMessage(MqConfigure.topics[0], "哈哈哈哈哈哈你是小邋遢，邋遢大王就是你");
+        }
+
+        if(R.id.isConnectedBtn == id){
+            logger.e("isConnected = %b", MQ.isConnected());
+
+        }
     }
 
     @Override
     public void onMessageArrived(String topic, String message) {
-
+        logger.e("topic = %s, message = %s", topic, message);
     }
 }

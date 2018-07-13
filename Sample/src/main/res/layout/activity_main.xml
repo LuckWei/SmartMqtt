@@ -20,6 +20,22 @@
         android:text="关闭MQTT服务" />
 
 
+    <Button
+        android:id="@+id/sendMessageBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="发送消息" />
+
+
+
+    <Button
+        android:id="@+id/isConnectedBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="判断连接状态" />
+
+
+
 
 
 </LinearLayout>

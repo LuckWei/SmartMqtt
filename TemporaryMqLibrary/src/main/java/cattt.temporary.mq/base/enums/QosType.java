@@ -1,4 +1,4 @@
-package cattt.temporary.mq.base.model;
+package cattt.temporary.mq.base.enums;
 
 public class QosType {
     public static final int GOOD = 2;

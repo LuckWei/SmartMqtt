@@ -1,7 +1,7 @@
 package cattt.temporary.mq;
 
 import cattt.temporary.mq.base.enums.QosClub;
-import cattt.temporary.mq.base.model.QosType;
+import cattt.temporary.mq.base.enums.QosType;
 
 public class MqConfigure {
     public static String userName = "guest";

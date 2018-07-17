@@ -12,6 +12,8 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
+import java.io.UnsupportedEncodingException;
+
 import static org.eclipse.paho.android.service.MqttAndroidClient.Ack.AUTO_ACK;
 
 public class MqConnection implements IMqConnectionAble {
@@ -34,7 +36,8 @@ public class MqConnection implements IMqConnectionAble {
     }
 
 
-    public MqttAndroidClient getMqClient(){
+    @Override
+    public MqttAndroidClient getMqClient() {
         return mClient;
     }
 
@@ -53,8 +56,8 @@ public class MqConnection implements IMqConnectionAble {
         logger.i("connect");
         try {
             if (!isConnected()) {
-                mClient.registerResources(mService);
                 mClient.connect(getMqttConnectOptions(), MqOperations.CONNECT, mService.mConnectListener);
+                mClient.registerResources(mService);
             }
         } catch (Exception ex) {
             logger.e("Unable to connect.", ex);
@@ -65,12 +68,13 @@ public class MqConnection implements IMqConnectionAble {
     public void disconnect(long quiesceTimeout) {
         try {
             if (isConnected()) {
+                mClient.unregisterResources();
                 mClient.disconnect(quiesceTimeout, MqOperations.DISCONNECT, mService.mDisconnectListener);
+                mClient = null;
             }
         } catch (Exception ex) {
             logger.e("Unable to disconnected.", ex);
         } finally {
-            mClient.unregisterResources();
             mService.releaseWakeLock();
         }
     }
@@ -95,7 +99,7 @@ public class MqConnection implements IMqConnectionAble {
         }
         checkTopic(topic);
         try {
-            mClient.publish(topic, message.getBytes(), getQos(), true, MqOperations.PUBLISH, mService.mPublishListener);
+            mClient.publish(topic, toUtf8(message).getBytes(), getQos(), true, MqOperations.PUBLISH, mService.mPublishListener);
         } catch (Exception ex) {
             logger.e("Unable to publish.", ex);
         }
@@ -121,9 +125,9 @@ public class MqConnection implements IMqConnectionAble {
         options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
         options.setAutomaticReconnect(true);
         options.setCleanSession(false);
-        options.setKeepAliveInterval(10);
-        options.setConnectionTimeout(30);
-        options.setMaxInflight(100);
+        options.setKeepAliveInterval(MqConfigure.keepAliveInterval);
+        options.setConnectionTimeout(MqConfigure.connectionTimeout);
+        options.setMaxInflight(MqConfigure.maxInflight);
         return options;
     }
 
@@ -131,7 +135,7 @@ public class MqConnection implements IMqConnectionAble {
     public DisconnectedBufferOptions getDisconnectedBufferOptions() {
         DisconnectedBufferOptions options = new DisconnectedBufferOptions();
         options.setBufferEnabled(true);
-        options.setBufferSize(5000);
+        options.setBufferSize(MqConfigure.bufferSize);
         options.setDeleteOldestMessages(true);
         options.setPersistBuffer(true);
         return options;
@@ -174,6 +178,10 @@ public class MqConnection implements IMqConnectionAble {
             qos[i] = getQos();
         }
         return qos;
+    }
+
+    private String toUtf8(String message) throws UnsupportedEncodingException {
+        return new String(message.getBytes("UTF-8"),"UTF-8");
     }
 
     @Override

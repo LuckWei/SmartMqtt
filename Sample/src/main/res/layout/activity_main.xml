@@ -8,16 +8,23 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/connectBtn"
+        android:id="@+id/startBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="启动MQTT服务" />
+        android:text="启动MQ服务并连接" />
 
     <Button
-        android:id="@+id/disconnectBtn"
+        android:id="@+id/stopBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="关闭MQTT服务" />
+        android:text="关闭MQ服务" />
+
+
+    <Button
+        android:id="@+id/subscribeBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="订阅主题" />
 
 
     <Button
@@ -33,9 +40,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="判断连接状态" />
-
-
-
 
 
 </LinearLayout>

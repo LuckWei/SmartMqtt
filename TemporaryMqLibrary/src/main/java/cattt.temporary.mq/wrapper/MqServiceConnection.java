@@ -1,21 +1,20 @@
-package cattt.temporary.mq;
+package cattt.temporary.mq.wrapper;
 
 import android.content.ComponentName;
 import android.os.IBinder;
 
-import cattt.temporary.mq.base.BaseServiceConnection;
 import cattt.temporary.mq.base.MqBinder;
 import cattt.temporary.mq.base.MqService;
 import cattt.temporary.mq.base.ServiceConnectionException;
 import cattt.temporary.mq.callback.OnConnectionListener;
 import cattt.temporary.mq.logger.Log;
 
-public class BridgeConnection extends BaseServiceConnection {
-    private static Log logger = Log.getLogger(BridgeConnection.class);
+public class MqServiceConnection extends BaseServiceConnection {
+    private static Log logger = Log.getLogger(MqServiceConnection.class);
 
     private OnConnectionListener mListener;
 
-    public BridgeConnection addOnConnectionListener(OnConnectionListener listener) {
+    public MqServiceConnection addOnConnectionListener(OnConnectionListener listener) {
         if (listener == null) {
             new NullPointerException("param cannot be null.");
         }
@@ -24,12 +23,12 @@ public class BridgeConnection extends BaseServiceConnection {
     }
 
 
-    protected BridgeConnection() {
+    protected MqServiceConnection() {
     }
 
     @Override
     protected String getConnectionType() {
-        return BridgeConnection.class.getSimpleName();
+        return MqServiceConnection.class.getSimpleName();
     }
 
     @Override
@@ -49,9 +48,9 @@ public class BridgeConnection extends BaseServiceConnection {
         ((MqBinder) getBinder()).startConnect();
     }
 
-    public boolean isConnected() throws ServiceConnectionException {
+    public boolean isConnected(){
         if (getBinder() == null) {
-            throw new ServiceConnectionException("Service is not connected");
+            return false;
         }
         return ((MqBinder) getBinder()).isConnected();
     }
@@ -61,6 +60,13 @@ public class BridgeConnection extends BaseServiceConnection {
             throw new ServiceConnectionException("Service is not connected");
         }
         ((MqBinder) getBinder()).publishMessage(topic, message);
+    }
+
+    public void subscribe(String[] topic) throws ServiceConnectionException {
+        if (getBinder() == null) {
+            throw new ServiceConnectionException("Service is not connected");
+        }
+        ((MqBinder) getBinder()).subscribe(topic);
     }
 
     @Override
@@ -81,10 +87,10 @@ public class BridgeConnection extends BaseServiceConnection {
     }
 
     private static final class Helper {
-        private static final BridgeConnection INSTANCE = new BridgeConnection();
+        private static final MqServiceConnection INSTANCE = new MqServiceConnection();
     }
 
-    protected static BridgeConnection get() {
+    public static MqServiceConnection get() {
         return Helper.INSTANCE;
     }
 }

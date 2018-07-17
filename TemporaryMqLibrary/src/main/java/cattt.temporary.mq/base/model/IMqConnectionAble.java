@@ -4,6 +4,8 @@ package cattt.temporary.mq.base.model;
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 
+import java.io.UnsupportedEncodingException;
+
 public interface IMqConnectionAble {
     String getWakeLockTag();
 

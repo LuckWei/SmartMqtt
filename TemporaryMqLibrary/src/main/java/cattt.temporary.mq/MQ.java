@@ -4,22 +4,27 @@ import android.content.Context;
 
 import cattt.temporary.mq.base.ServiceConnectionException;
 import cattt.temporary.mq.callback.OnConnectionListener;
+import cattt.temporary.mq.wrapper.MqServiceConnection;
 
 public class MQ {
 
-    public static void bindService(Context context, OnConnectionListener listener){
-        BridgeConnection.get().addOnConnectionListener(listener).init(context.getApplicationContext()).bindServiceOfMessage();
+    public static void bindService(Context context, OnConnectionListener listener) {
+        MqServiceConnection.get().addOnConnectionListener(listener).init(context.getApplicationContext()).bindServiceOfMessage();
     }
 
-    public static boolean isConnected() throws ServiceConnectionException {
-        return BridgeConnection.get().isConnected();
+    public static boolean isConnected() {
+        return MqServiceConnection.get().isConnected();
     }
 
     public static void publishMessage(String topic, String message) throws ServiceConnectionException {
-        BridgeConnection.get().publishMessage(topic, message);
+        MqServiceConnection.get().publishMessage(topic, message);
+    }
+
+    public static void subscribe(String[] topic) throws ServiceConnectionException {
+        MqServiceConnection.get().subscribe(topic);
     }
 
     public static void unbindService() throws IllegalArgumentException {
-        BridgeConnection.get().unbindService();
+        MqServiceConnection.get().unbindService();
     }
 }

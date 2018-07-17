@@ -8,8 +8,8 @@ import android.os.Message;
 import android.os.PowerManager;
 
 import cattt.temporary.mq.MqConfigure;
-import cattt.temporary.mq.MqMessageMonitor;
-import cattt.temporary.mq.MqStateMonitor;
+import cattt.temporary.mq.wrapper.MqMessageMonitor;
+import cattt.temporary.mq.wrapper.MqConnectionStateMonitor;
 import cattt.temporary.mq.base.model.IMqConnectionAble;
 import cattt.temporary.mq.logger.Log;
 
@@ -20,6 +20,7 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.TimeUnit;
 
 public class MqService extends Service implements MqttCallbackExtended, MqttTraceHandler {
@@ -62,19 +63,22 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         mMqConnection.unsubscribe(MqConfigure.topics);
         mMqConnection.disconnect(0);
         mMqConnection = null;
+        mMqBinder = null;
+        handler = null;
+        wakelock = null;
         super.onDestroy();
     }
 
 
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
-        MqStateMonitor.get().onConnectedOfMessage(serverURI);
-        mMqConnection.subscribe(MqConfigure.topics);
+        MqConnectionStateMonitor.get().handlerOnConnected(serverURI);
     }
 
     @Override
     public void connectionLost(Throwable cause) {
-        MqStateMonitor.get().onDisconnectionOfMessage(cause);
+        MqConnectionStateMonitor.get().handlerOnDisconnection(cause);
+        handlerReconnect();
     }
 
     @Override
@@ -89,7 +93,7 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
             releaseWakeLock();
             return;
         }
-        MqMessageMonitor.get().onMessageArrivedOfMessage(topic, new String(bytes));
+        MqMessageMonitor.get().handlerOnMessageArrived(topic,  byte2String(bytes));
         releaseWakeLock();
     }
 
@@ -102,16 +106,15 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         @Override
         public void onSuccess(IMqttToken token) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.i("onSuccess %s", opt);
+            //目前这种服务方式封装MQTT，成功注销连接的消息永远也不会接收到，所以请将注销连接的动作放在onDestroy方法中
+            logger.i("onSuccess %s", userContext2MqOperations(token));
             releaseWakeLock();
         }
 
         @Override
         public void onFailure(IMqttToken token, Throwable ex) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.w(String.format("onFailure %s", opt), ex);
+            logger.w(String.format("onFailure %s", userContext2MqOperations(token)), ex);
             releaseWakeLock();
         }
     };
@@ -120,8 +123,7 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         @Override
         public void onSuccess(IMqttToken token) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.i("onSuccess %s", opt);
+            logger.i("onSuccess %s", userContext2MqOperations(token));
             mMqConnection.getMqClient().setBufferOpts(mMqConnection.getDisconnectedBufferOptions());
             releaseWakeLock();
         }
@@ -129,9 +131,8 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         @Override
         public void onFailure(IMqttToken token, Throwable ex) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.w(String.format("onFailure %s", opt), ex);
-            handler.sendEmptyMessageDelayed(MSG_CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3));
+            logger.w(String.format("onFailure %s", userContext2MqOperations(token)), ex);
+            handlerReconnect();
             releaseWakeLock();
         }
     };
@@ -140,16 +141,14 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         @Override
         public void onSuccess(IMqttToken token) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.i("onSuccess %s", opt);
+            logger.i("onSuccess %s", userContext2MqOperations(token));
             releaseWakeLock();
         }
 
         @Override
         public void onFailure(IMqttToken token, Throwable ex) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.w(String.format("onFailure %s", opt), ex);
+            logger.w(String.format("onFailure %s", userContext2MqOperations(token)), ex);
             releaseWakeLock();
         }
     };
@@ -158,16 +157,14 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         @Override
         public void onSuccess(IMqttToken token) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.i("onSuccess %s", opt);
+            logger.i("onSuccess %s", userContext2MqOperations(token));
             releaseWakeLock();
         }
 
         @Override
         public void onFailure(IMqttToken token, Throwable ex) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.w(String.format("onFailure %s", opt), ex);
+            logger.w(String.format("onFailure %s", userContext2MqOperations(token)), ex);
             releaseWakeLock();
         }
     };
@@ -176,19 +173,22 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
         @Override
         public void onSuccess(IMqttToken token) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.i("onSuccess %s", opt);
+            logger.i("onSuccess %s", userContext2MqOperations(token));
             releaseWakeLock();
         }
 
         @Override
         public void onFailure(IMqttToken token, Throwable ex) {
             acquireWakeLock();
-            MqOperations opt = (MqOperations) token.getUserContext();
-            logger.w(String.format("onFailure %s", opt), ex);
+            logger.w(String.format("onFailure %s", userContext2MqOperations(token)), ex);
             releaseWakeLock();
         }
     };
+
+    private MqOperations userContext2MqOperations(IMqttToken token) {
+        return (MqOperations) token.getUserContext();
+    }
+
 
 
     /**
@@ -221,6 +221,22 @@ public class MqService extends Service implements MqttCallbackExtended, MqttTrac
 
     public void publishMessage(String topic, String message) {
         mMqConnection.publish(topic, message);
+    }
+
+    public void subscribe(String[] topic) {
+        mMqConnection.subscribe(topic);
+    }
+
+    public void disconnect(long quiesceTimeout) {
+        mMqConnection.disconnect(quiesceTimeout);
+    }
+
+    private void handlerReconnect() {
+        handler.sendEmptyMessageDelayed(MSG_CODE_RECONNECT, TimeUnit.SECONDS.toMillis(MqConfigure.connectionTimeout));
+    }
+
+    private String byte2String(byte[] bytes) throws UnsupportedEncodingException {
+        return new String(bytes, "UTF-8");
     }
 
     private static class MqHandler extends Handler {

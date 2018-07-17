@@ -1,4 +1,4 @@
-package cattt.temporary.mq;
+package cattt.temporary.mq.wrapper;
 
 import android.os.Handler;
 import android.os.Message;
@@ -7,13 +7,13 @@ import cattt.temporary.mq.callback.OnMqConnectionListener;
 
 import java.util.ArrayList;
 
-public class MqStateMonitor {
+public class MqConnectionStateMonitor {
     private static final int MSG_CODE_CONNECTED = 10000;
     private static final int MSG_CODE_DISCONNECTION = 10001;
 
     private MainHandler handler;
 
-    private MqStateMonitor() {
+    private MqConnectionStateMonitor() {
         handler = new MainHandler(this);
     }
 
@@ -34,11 +34,11 @@ public class MqStateMonitor {
         mListeners.remove(listener);
     }
 
-    public void onConnectedOfMessage(String serverUri) {
+    public void handlerOnConnected(String serverUri) {
         handler.obtainMessage(MSG_CODE_CONNECTED, serverUri).sendToTarget();
     }
 
-    public void onDisconnectionOfMessage(Throwable ex) {
+    public void handlerOnDisconnection(Throwable ex) {
         handler.obtainMessage(MSG_CODE_DISCONNECTION, ex).sendToTarget();
     }
 
@@ -55,17 +55,17 @@ public class MqStateMonitor {
     }
 
     private static final class Helper {
-        private static final MqStateMonitor INSTANCE = new MqStateMonitor();
+        private static final MqConnectionStateMonitor INSTANCE = new MqConnectionStateMonitor();
     }
 
-    public static MqStateMonitor get() {
+    public static MqConnectionStateMonitor get() {
         return Helper.INSTANCE;
     }
 
     private static class MainHandler extends Handler {
-        private MqStateMonitor monitor;
+        private MqConnectionStateMonitor monitor;
 
-        public MainHandler(MqStateMonitor monitor) {
+        public MainHandler(MqConnectionStateMonitor monitor) {
             this.monitor = monitor;
         }
 

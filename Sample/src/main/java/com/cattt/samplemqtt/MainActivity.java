@@ -6,12 +6,10 @@ import android.view.View;
 
 import cattt.temporary.mq.MQ;
 import cattt.temporary.mq.MqConfigure;
-import cattt.temporary.mq.MqMessageMonitor;
+import cattt.temporary.mq.wrapper.MqMessageMonitor;
 import cattt.temporary.mq.callback.OnConnectionListener;
 import cattt.temporary.mq.callback.OnMqMessageListener;
 import cattt.temporary.mq.logger.Log;
-
-import java.util.UUID;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnMqMessageListener {
@@ -21,9 +19,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        findViewById(R.id.connectBtn).setOnClickListener(this);
-        findViewById(R.id.disconnectBtn).setOnClickListener(this);
+        findViewById(R.id.startBtn).setOnClickListener(this);
+        findViewById(R.id.stopBtn).setOnClickListener(this);
         findViewById(R.id.sendMessageBtn).setOnClickListener(this);
+        findViewById(R.id.subscribeBtn).setOnClickListener(this);
         findViewById(R.id.isConnectedBtn).setOnClickListener(this);
         MqMessageMonitor.get().addOnMqMessageListener(this);
     }
@@ -37,10 +36,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         final int id = v.getId();
-        if (R.id.connectBtn == id) {
+        if (R.id.startBtn == id) {
             //重新对订阅内容进行赋值
-            MqConfigure.clientId = "cattt" + UUID.randomUUID().toString();
-            MqConfigure.topics = new String[]{"catt/devices"};
+            MqConfigure.clientId = "zhiwei_110101";
+            MqConfigure.topics = new String[]{"1A2B3C4D5E6F7G8H"};
             MQ.bindService(getApplicationContext(), new OnConnectionListener() {
                 @Override
                 public void onConnected() {
@@ -53,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             });
         }
-        if (R.id.disconnectBtn == id) {
+        if (R.id.stopBtn == id) {
             try {
                 MQ.unbindService();
             } catch (IllegalArgumentException ex) {
@@ -61,11 +60,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
 
-        if(R.id.sendMessageBtn == id){
+        if (R.id.subscribeBtn == id) {
+            MQ.subscribe(MqConfigure.topics);
+        }
+
+        if (R.id.sendMessageBtn == id) {
             MQ.publishMessage(MqConfigure.topics[0], "哈哈哈哈哈哈你是小邋遢，邋遢大王就是你");
         }
 
-        if(R.id.isConnectedBtn == id){
+        if (R.id.isConnectedBtn == id) {
             logger.e("isConnected = %b", MQ.isConnected());
 
         }

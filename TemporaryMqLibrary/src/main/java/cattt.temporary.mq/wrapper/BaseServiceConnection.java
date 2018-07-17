@@ -1,4 +1,4 @@
-package cattt.temporary.mq.base;
+package cattt.temporary.mq.wrapper;
 
 import android.content.ComponentName;
 import android.content.Context;

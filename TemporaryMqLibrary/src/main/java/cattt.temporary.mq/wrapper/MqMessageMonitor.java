@@ -1,4 +1,4 @@
-package cattt.temporary.mq;
+package cattt.temporary.mq.wrapper;
 
 import android.os.Handler;
 import android.os.Message;
@@ -33,7 +33,7 @@ public class MqMessageMonitor {
         mListeners.remove(listener);
     }
 
-    public void onMessageArrivedOfMessage(String topic, String message) {
+    public void handlerOnMessageArrived(String topic, String message) {
         handler.obtainMessage(MSG_CODE_MESSAGE_ARRIVED, new Content(topic, message)).sendToTarget();
     }
 

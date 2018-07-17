@@ -1,5 +1,7 @@
 package cattt.temporary.mq;
 
+import android.support.annotation.IntRange;
+
 import cattt.temporary.mq.base.enums.QosClub;
 import cattt.temporary.mq.base.enums.QosType;
 
@@ -23,6 +25,8 @@ public class MqConfigure {
 
     public static int connectionTimeout = 10;
     public static int keepAliveInterval = 60;
+    @IntRange(from = 10, to = 1000)
     public static int maxInflight = 100;
+    @IntRange(from = 5000, to = Integer.MAX_VALUE)
     public static int bufferSize = 10000;
 }

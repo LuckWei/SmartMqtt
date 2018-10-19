@@ -12,7 +12,7 @@ import android.text.TextUtils
 import android.util.Log.*
 
 
-open abstract class ServiceConnectionImpl(
+internal abstract class ServiceConnectionImpl(
     private val _connectionType: String,
     private val _implicitAction: String,
     private val _ownCategory: String

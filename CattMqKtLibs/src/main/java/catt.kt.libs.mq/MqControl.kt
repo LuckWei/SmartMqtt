@@ -31,27 +31,27 @@ object MqControl {
     }
 
     @JvmStatic
-    fun addOnConnectionListener(listener: OnConnectionListener) =
+    fun addOnConnectionListener(listener: OnConnectionListener?) =
         ConnectionMonitor.get().addOnConnectionListener(listener)
 
     @JvmStatic
-    fun removeOnConnectionListener(listener: OnConnectionListener) =
+    fun removeOnConnectionListener(listener: OnConnectionListener?) =
         ConnectionMonitor.get().removeOnConnectionListener(listener)
 
     @JvmStatic
-    fun addOnPublishDeliveryListener(listener: OnPublishDeliveryListener) =
+    fun addOnPublishDeliveryListener(listener: OnPublishDeliveryListener?) =
         PublishDeliveryMonitor.get().addOnPublishDeliveryListener(listener)
 
     @JvmStatic
-    fun removeOnPublishDeliveryListener(listener: OnPublishDeliveryListener) =
+    fun removeOnPublishDeliveryListener(listener: OnPublishDeliveryListener?) =
         PublishDeliveryMonitor.get().removeOnPublishDeliveryListener(listener)
 
     @JvmStatic
-    fun addOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener) =
+    fun addOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener?) =
         SubscribeMessagesMonitor.get().addOnSubscribeMessagesListener(listener)
 
     @JvmStatic
-    fun removeOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener) =
+    fun removeOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener?) =
         SubscribeMessagesMonitor.get().removeOnSubscribeMessagesListener(listener)
 
 }

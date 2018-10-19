@@ -14,7 +14,7 @@ class MqConnectionService : Service() {
     @Inject
     internal lateinit var binder: MqBinder
     @Inject
-    internal lateinit var presenter: MqConnectionPresenter
+    internal lateinit var presenter: IConnectionPresenter
 
     private lateinit var component: ConnectionComponent
 

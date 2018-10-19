@@ -13,7 +13,7 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class MqConnectionPresenter constructor(_context: Context) :
-    MqBasePresenter(_context.applicationContext) {
+    MqBasePresenter(_context.applicationContext), IConnectionPresenter {
 
     private val _TAG: String = MqConnectionPresenter::class.java.simpleName
     private val _handlerWeakR: WeakReference<PresenterHandler> by lazy { WeakReference(PresenterHandler(this@MqConnectionPresenter)) }
@@ -84,10 +84,9 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         })
     }
 
-    inline val isConnected: Boolean
-        get() = mqttAndroidClient.isConnected
+    override fun isConnected(): Boolean = mqttAndroidClient.isConnected
 
-    fun connect() = when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
+    override fun connect() = when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
         true -> {
             _connectionMonitor.onConnectingOfMessage(mqttAndroidClient.serverURI)
             connect(mqActionListenerWeakR!!.get())
@@ -98,21 +97,22 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         }
     }
 
-    fun disconnect(quiesceTimeout: Long = 0) =
+    override fun disconnect(quiesceTimeout: Long) =
         when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
             true -> disconnect(quiesceTimeout, mqActionListenerWeakR!!.get())
             false -> disconnect(quiesceTimeout, null)
         }
 
-    fun publishMessage(topic: String, message: String) = publishMessage(topic, message.toByteArray(Charsets.UTF_8))
+    override fun publishMessage(topic: String, message: String) =
+        publishMessage(topic, message.toByteArray(Charsets.UTF_8))
 
-    fun publishMessage(topic: String, payload: ByteArray) =
+    private fun publishMessage(topic: String, payload: ByteArray) =
         when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
             true -> publish(topic, payload, mqActionListenerWeakR!!.get())
             false -> publish(topic, payload, null)
         }
 
-    fun subscribe(topics: Array<String>) =
+    override fun subscribe(topics: Array<String>) =
         when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
             true -> subscribe(topics, mqActionListenerWeakR!!.get())
             false -> subscribe(topics, null)
@@ -143,7 +143,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         }
     }
 
-    fun destroyOwn() {
+    override fun destroyOwn() {
         mqActionListenerWeakR?.clear()
         disconnect()
         removeCallbacksAndMessages()
@@ -159,11 +159,11 @@ internal class MqConnectionPresenter constructor(_context: Context) :
             }.looper
         }
 
-        private class PresenterHandler(private val presenter: MqConnectionPresenter) : Handler(_looper) {
+        private class PresenterHandler(private val presenter: IConnectionPresenter) : Handler(_looper) {
             override fun handleMessage(msg: Message?) {
                 msg?.apply {
                     when (what) {
-                        _CODE_RECONNECT -> if (!presenter.isConnected) presenter.connect()
+                        _CODE_RECONNECT -> if (!presenter.isConnected()) presenter.connect()
                     }
                 }
             }

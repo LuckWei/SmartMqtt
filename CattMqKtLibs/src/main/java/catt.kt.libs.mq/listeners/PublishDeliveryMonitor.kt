@@ -10,12 +10,12 @@ class PublishDeliveryMonitor private constructor(){
 
     private val _handler: MonitorHandler by lazy { MonitorHandler(this@PublishDeliveryMonitor) }
 
-    fun addOnPublishDeliveryListener(listener: OnPublishDeliveryListener) {
+    fun addOnPublishDeliveryListener(listener: OnPublishDeliveryListener?) {
         listener ?: return
         _handler.obtainMessage(CODE_ADD, listener).sendToTarget()
     }
 
-    fun removeOnPublishDeliveryListener(listener: OnPublishDeliveryListener) {
+    fun removeOnPublishDeliveryListener(listener: OnPublishDeliveryListener?) {
         listener ?: return
         _handler.obtainMessage(CODE_REMOVE, listener).sendToTarget()
     }

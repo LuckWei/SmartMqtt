@@ -2,7 +2,7 @@ package catt.kt.libs.mq.core
 
 import catt.kt.libs.mq.wrapper.ServiceConnectionImpl
 
-class MqServiceConnection(
+internal class MqServiceConnection(
     connectionType: String = MqServiceConnection::class.java.simpleName,
     implicitAction: String = "catt.mq.libs.ACTION_CONNECTION_MQTT",
     ownCategory: String = "k632ioRVbA7xT8sf9RjGlH0v6nBthjmYKQNT49HvjJ0KPPltJRI51tNjdsHzh6nJ"

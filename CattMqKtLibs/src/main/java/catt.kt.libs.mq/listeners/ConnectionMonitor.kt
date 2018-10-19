@@ -10,12 +10,12 @@ class ConnectionMonitor private constructor() {
 
     private val _handler: MonitorHandler by lazy { MonitorHandler(this@ConnectionMonitor) }
 
-    fun addOnConnectionListener(listener: OnConnectionListener) {
+    fun addOnConnectionListener(listener: OnConnectionListener?) {
         listener ?: return
         _handler.obtainMessage(CODE_ADD, listener).sendToTarget()
     }
 
-    fun removeOnConnectionListener(listener: OnConnectionListener) {
+    fun removeOnConnectionListener(listener: OnConnectionListener?) {
         listener ?: return
         _handler.obtainMessage(CODE_REMOVE, listener).sendToTarget()
     }

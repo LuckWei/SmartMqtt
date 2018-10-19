@@ -10,12 +10,12 @@ class SubscribeMessagesMonitor private constructor(){
 
     private val _handler: MonitorHandler by lazy { MonitorHandler(this@SubscribeMessagesMonitor) }
 
-    fun addOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener) {
+    fun addOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener?) {
         listener ?: return
         _handler.obtainMessage(CODE_ADD, listener).sendToTarget()
     }
 
-    fun removeOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener) {
+    fun removeOnSubscribeMessagesListener(listener: OnSubscribeMessagesListener?) {
         listener ?: return
         _handler.obtainMessage(CODE_REMOVE, listener).sendToTarget()
     }

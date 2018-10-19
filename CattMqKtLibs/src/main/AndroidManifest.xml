@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="catt.kt.libs.mq">
+
+    <application android:name=".core.MqApp">
+        <service android:name="org.eclipse.paho.android.service.MqttService"
+                 android:exported="false"/>
+
+        <service android:name=".core.MqConnectionService"
+                 android:exported="false">
+            <intent-filter>
+                <action android:name="catt.mq.libs.ACTION_CONNECTION_MQTT"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="k632ioRVbA7xT8sf9RjGlH0v6nBthjmYKQNT49HvjJ0KPPltJRI51tNjdsHzh6nJ"/>
+
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

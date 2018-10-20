@@ -21,15 +21,15 @@ class ConnectionMonitor private constructor() {
     }
 
     internal fun onConnectionLostOfMessage(cause: Throwable) {
-        _handler.obtainMessage(CODE_REMOVE, cause).sendToTarget()
+        _handler.obtainMessage(CODE_ON_CONNECTION_LOST, cause).sendToTarget()
     }
 
     internal fun onConnectingOfMessage(serverURI: String) {
-        _handler.obtainMessage(CODE_REMOVE, serverURI).sendToTarget()
+        _handler.obtainMessage(CODE_ON_CONNECTING, serverURI).sendToTarget()
     }
 
     internal fun onConnectCompleteOfMessage(reconnect: Boolean, serverURI: String) {
-        _handler.obtainMessage(CODE_REMOVE, CMessage(reconnect, serverURI)).sendToTarget()
+        _handler.obtainMessage(CODE_ON_CONNECT_COMPLETE, CMessage(reconnect, serverURI)).sendToTarget()
     }
 
     private fun onConnectionLost(cause: Throwable) {

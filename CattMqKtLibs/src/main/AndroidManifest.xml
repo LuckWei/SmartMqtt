@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="catt.kt.libs.mq">
 
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <application android:name=".core.MqApp">
         <service android:name="org.eclipse.paho.android.service.MqttService"
                  android:exported="false"/>

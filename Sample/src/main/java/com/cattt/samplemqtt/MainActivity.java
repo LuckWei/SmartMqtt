@@ -1,5 +1,6 @@
 package com.cattt.samplemqtt;
 
+import android.content.ComponentName;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -7,6 +8,7 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import catt.kt.libs.mq.MqConfigure;
 import catt.kt.libs.mq.MqControl;
+import catt.kt.libs.mq.listeners.OnServiceConnectionListener;
 import catt.kt.libs.mq.listeners.OnSubscribeMessagesListener;
 
 
@@ -23,6 +25,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.subscribeBtn).setOnClickListener(this);
         findViewById(R.id.isConnectedBtn).setOnClickListener(this);
 
+
+        MqConfigure.setDeviceNo("You_Device_NO._or_You_Only_ID");
+        MqConfigure.setServerUrl("You Mqtt service url, example: http://200.198.13.7:1883");
+        MqConfigure.setUserName("You User Name");
+        MqConfigure.setPassword("You Password");
+        MqConfigure.setClientId("client id");
+        MqConfigure.setTopics(new String[]{"1A2B3C4D5E6F7G8H"});
+
+
         MqControl.addOnSubscribeMessagesListener(this);
     }
 
@@ -37,9 +48,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         final int id = v.getId();
         if (R.id.startBtn == id) {
             //重新对订阅内容进行赋值
-            MqConfigure.setClientId("zhiwei_110101");
-            MqConfigure.setTopics(new String[]{"1A2B3C4D5E6F7G8H"});
-            MqControl.bindService(getApplicationContext());
+            MqControl.bindService(getApplicationContext(), new OnServiceConnectionListener() {
+                @Override
+                public void onServiceConnected(ComponentName name) {
+                    Log.e(TAG, "onServiceConnected: " + name.getPackageName() + "/" + name.getClassName());
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    Log.e(TAG, "onServiceDisconnected: " + name.getPackageName() + "/" + name.getClassName());
+                }
+            });
         }
         if (R.id.stopBtn == id) {
             try {

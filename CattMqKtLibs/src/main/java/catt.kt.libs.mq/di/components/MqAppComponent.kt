@@ -8,6 +8,5 @@ import javax.inject.Singleton
 @Singleton
 @Component(modules = [MqAppModule::class])
 interface MqAppComponent {
-
     fun getContext(): Context
 }

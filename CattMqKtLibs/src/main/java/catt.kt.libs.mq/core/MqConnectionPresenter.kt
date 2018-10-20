@@ -13,29 +13,40 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class MqConnectionPresenter constructor(_context: Context) :
-    MqBasePresenter(_context.applicationContext), IConnectionPresenter {
-
+    MqBasePresenter(_context), IMqttActionListener, IConnectionPresenter {
     private val _TAG: String = MqConnectionPresenter::class.java.simpleName
     private val _handlerWeakR: WeakReference<PresenterHandler> by lazy { WeakReference(PresenterHandler(this@MqConnectionPresenter)) }
     private val _subscribeMessagesMonitor: SubscribeMessagesMonitor by lazy { SubscribeMessagesMonitor.get() }
     private val _publishDeliveryMonitor: PublishDeliveryMonitor by lazy { PublishDeliveryMonitor.get() }
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
+    private var whetherDestroyOwn: Boolean = false
 
-    private var mqActionListenerWeakR: WeakReference<IMqttActionListener>? = null
 
-    init {
-        setOnMqttActionListener { completed, token, ex ->
-            token ?: return@setOnMqttActionListener
-            val operations: MqOperations = userContext2MqOperations(token)
-            when {
-                completed -> i(_TAG, "Mq Operation[$operations] -> Completed.")
-                !completed && operations === MqOperations.CONNECT -> {
-                    e(_TAG, "Mq Operation[$operations] -> Failed.", ex)
-                    sendEmptyMessage(_CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3))
-                }
-                else -> e(_TAG, "Mq Operation[$operations] -> Failed.", ex)
+    override fun onSuccess(token: IMqttToken?) {
+        token ?: return
+        if (whetherDestroyOwn) return
+        acquireWakeLock()
+        val operations: MqOperations = userContext2MqOperations(token)
+        i(_TAG, "Mq Operation[$operations] -> Completed.")
+        when (operations) {
+            MqOperations.CONNECT -> client.setBufferOpts(disOptions)
+        }
+        releaseWakeLock()
+    }
+
+    override fun onFailure(token: IMqttToken?, ex: Throwable?) {
+        token ?: return
+        if (whetherDestroyOwn) return
+        acquireWakeLock()
+        val operations: MqOperations = userContext2MqOperations(token)
+        e(_TAG, "Mq Operation[$operations] -> Failed.", ex)
+        when (operations) {
+            MqOperations.CONNECT -> {
+                removeMessages(CODE_RECONNECT)
+                sendEmptyMessage(CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3))
             }
         }
+        releaseWakeLock()
     }
 
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
@@ -68,55 +79,21 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         }
     }
 
-    private fun setOnMqttActionListener(listener: IMqttActionListener.(completed: Boolean, token: IMqttToken?, ex: Throwable?) -> Unit) {
-        mqActionListenerWeakR = WeakReference(object : IMqttActionListener {
-            override fun onSuccess(token: IMqttToken?) {
-                acquireWakeLock()
-                listener(true, token, null)
-                releaseWakeLock()
-            }
+    override fun isConnected(): Boolean = client.isConnected
 
-            override fun onFailure(token: IMqttToken?, ex: Throwable?) {
-                acquireWakeLock()
-                listener(false, token, ex)
-                releaseWakeLock()
-            }
-        })
+    override fun connect() {
+        _connectionMonitor.onConnectingOfMessage(client.serverURI)
+        connect(this)
     }
 
-    override fun isConnected(): Boolean = mqttAndroidClient.isConnected
-
-    override fun connect() = when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
-        true -> {
-            _connectionMonitor.onConnectingOfMessage(mqttAndroidClient.serverURI)
-            connect(mqActionListenerWeakR!!.get())
-        }
-        false -> {
-            _connectionMonitor.onConnectingOfMessage(mqttAndroidClient.serverURI)
-            connect(null)
-        }
-    }
-
-    override fun disconnect(quiesceTimeout: Long) =
-        when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
-            true -> disconnect(quiesceTimeout, mqActionListenerWeakR!!.get())
-            false -> disconnect(quiesceTimeout, null)
-        }
+    override fun disconnect(quiesceTimeout: Long) = disconnect(quiesceTimeout, this)
 
     override fun publishMessage(topic: String, message: String) =
         publishMessage(topic, message.toByteArray(Charsets.UTF_8))
 
-    private fun publishMessage(topic: String, payload: ByteArray) =
-        when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
-            true -> publish(topic, payload, mqActionListenerWeakR!!.get())
-            false -> publish(topic, payload, null)
-        }
+    private fun publishMessage(topic: String, payload: ByteArray) = publish(topic, payload, this)
 
-    override fun subscribe(topics: Array<String>) =
-        when (mqActionListenerWeakR != null && mqActionListenerWeakR!!.get() != null) {
-            true -> subscribe(topics, mqActionListenerWeakR!!.get())
-            false -> subscribe(topics, null)
-        }
+    override fun subscribe(topics: Array<String>) = subscribe(topics, this)
 
     private fun sendEmptyMessage(what: Int, delayMillis: Long) {
         _handlerWeakR.get()?.apply {
@@ -144,26 +121,30 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun destroyOwn() {
-        mqActionListenerWeakR?.clear()
-        disconnect()
-        removeCallbacksAndMessages()
+        e(_TAG, "### Begin close the client.")
+        try {
+            whetherDestroyOwn = true
+            removeCallbacksAndMessages()
+            disconnect()
+        } finally {
+            client.close()
+        }
     }
 
 
     companion object MqMessageCode {
-        private const val _CODE_RECONNECT: Int = 10000
+        private const val CODE_RECONNECT: Int = 10000
 
-        private val _looper: Looper by lazy {
-            HandlerThread(":MQ_CONNECTION_BACKGROUND_THREAD", Process.THREAD_PRIORITY_BACKGROUND).apply {
-                start()
-            }.looper
-        }
-
-        private class PresenterHandler(private val presenter: IConnectionPresenter) : Handler(_looper) {
+        private class PresenterHandler(private val presenter: MqConnectionPresenter) :
+            Handler(
+                HandlerThread(":MQ_CONNECTION_BACKGROUND_THREAD", Process.THREAD_PRIORITY_BACKGROUND)
+                    .apply { start() }.looper
+            ) {
             override fun handleMessage(msg: Message?) {
+                if (presenter.whetherDestroyOwn) return
                 msg?.apply {
                     when (what) {
-                        _CODE_RECONNECT -> if (!presenter.isConnected()) presenter.connect()
+                        CODE_RECONNECT -> if (!presenter.isConnected()) presenter.connect()
                     }
                 }
             }

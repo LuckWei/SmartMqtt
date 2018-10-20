@@ -38,7 +38,7 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
     override fun traceError(tag: String?, message: String?) {
     }
 
-    private val _client: MqttAndroidClient by lazy {
+    val client: MqttAndroidClient by lazy {
         i(_TAG, "@ Initialize M.Q.T.T client. ${toString()}")
         MqttAndroidClient(
             _context,
@@ -48,13 +48,12 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
             MqttAndroidClient.Ack.AUTO_ACK
         ).apply {
             setTraceEnabled(MqConfigure.isTrace)
-            setBufferOpts(_disOptions)
             setCallback(this@MqBasePresenter)
             setTraceCallback(this@MqBasePresenter)
         }
     }
 
-    private val _options: MqttConnectOptions by lazy {
+    val options: MqttConnectOptions by lazy {
         MqttConnectOptions().apply {
             userName = MqConfigure.userName
             password = MqConfigure.password.toCharArray()
@@ -67,7 +66,7 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
         }
     }
 
-    private val _disOptions: DisconnectedBufferOptions by lazy {
+    val disOptions: DisconnectedBufferOptions by lazy {
         DisconnectedBufferOptions().apply {
             isBufferEnabled = true
             bufferSize = MqConfigure.bufferSize
@@ -79,9 +78,9 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
     fun connect(callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to connect...")
         try {
-            _client.run {
+            client.run {
                 if (isConnected) return@run
-                connect(_options, MqOperations.CONNECT, callback)
+                connect(options, MqOperations.CONNECT, callback)
                 registerResources(_context)
             }
         } catch (ex: Exception) {
@@ -92,7 +91,7 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
     fun disconnect(quiesceTimeout: Long, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to disconnect...")
         try {
-            _client.run {
+            client.run {
                 if (!isConnected) return@run
                 unregisterResources()
                 disconnect(quiesceTimeout, MqOperations.DISCONNECT, callback)
@@ -107,7 +106,7 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
     fun publish(topic: String, payload: ByteArray, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to publish...")
         try {
-            _client.run {
+            client.run {
                 if (!isConnected) return@run
                 publish(topic, payload, MqConfigure.qos, true, MqOperations.PUBLISH, callback)
             }
@@ -119,7 +118,7 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
     fun subscribe(topic: Array<String>, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to subscribe...")
         try {
-            _client.run {
+            client.run {
                 if (!isConnected) return@run
                 subscribe(topic, getQos(topic.size), MqOperations.SUBSCRIBE, callback)
             }
@@ -131,7 +130,7 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
     fun unsubscribe(topic: Array<String>, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to unsubscribe...")
         try {
-            _client.run {
+            client.run {
                 if (!isConnected) return@run
                 unsubscribe(topic, MqOperations.UNSUBSCRIBE, callback)
             }
@@ -163,9 +162,6 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
         wakelock ?: return
         wakelock!!.acquire()
     }
-
-    val mqttAndroidClient: MqttAndroidClient
-        get() = _client
 
 
     override fun toString(): String {

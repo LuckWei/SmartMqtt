@@ -10,5 +10,5 @@ class MqAppModule(private val _context: Context) {
 
     @Singleton
     @Provides
-    fun provideContext(): Context = _context
+    fun provideContext() = _context
 }

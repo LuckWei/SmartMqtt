@@ -6,29 +6,35 @@ import catt.kt.libs.mq.listeners.*
 
 object MqControl {
 
-    @JvmStatic
-    fun bindService(context: Context) {
-        MqServiceConnection.get().inject(context).bindServiceOfMessage()
-    }
+//    @JvmStatic
+//    fun bindService(
+//        context: Context,
+//        listener: OnServiceConnectionListener.(isConnected: Boolean, name: ComponentName) -> Unit
+//    ) = MqServiceConnection.get().setOnServiceConnectionListener(listener).inject(context).bindServiceOfMessage()
 
     @JvmStatic
-    fun unbindService() {
-        MqServiceConnection.get().unbindService()
-    }
+    fun bindService(
+        context: Context
+    ) = MqServiceConnection.get().inject(context).bindServiceOfMessage()
+
+    @JvmStatic
+    fun bindService(
+        context: Context,
+        listener: OnServiceConnectionListener
+    ) = MqServiceConnection.get().setOnServiceConnectionListener(listener).inject(context).bindServiceOfMessage()
+
+    @JvmStatic
+    fun unbindService() = MqServiceConnection.get().unbindService()
 
     @JvmStatic
     val isConnected: Boolean
         get() = MqServiceConnection.get().isConnected
 
     @JvmStatic
-    fun publishMessage(topic: String, message: String) {
-        MqServiceConnection.get().publishMessage(topic, message)
-    }
+    fun publishMessage(topic: String, message: String) = MqServiceConnection.get().publishMessage(topic, message)
 
     @JvmStatic
-    fun subscribe(topic: Array<String>) {
-        MqServiceConnection.get().subscribe(topic)
-    }
+    fun subscribe(topic: Array<String>) = MqServiceConnection.get().subscribe(topic)
 
     @JvmStatic
     fun addOnConnectionListener(listener: OnConnectionListener?) =

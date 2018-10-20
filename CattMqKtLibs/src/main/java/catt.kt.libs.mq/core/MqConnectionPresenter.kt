@@ -13,7 +13,7 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class MqConnectionPresenter constructor(_context: Context) :
-    MqBasePresenter(_context), IMqttActionListener, IConnectionPresenter {
+    MqBase(_context), IMqttActionListener, IConnectionPresenter {
     private val _TAG: String = MqConnectionPresenter::class.java.simpleName
     private val _handlerWeakR: WeakReference<PresenterHandler> by lazy { WeakReference(PresenterHandler(this@MqConnectionPresenter)) }
     private val _subscribeMessagesMonitor: SubscribeMessagesMonitor by lazy { SubscribeMessagesMonitor.get() }

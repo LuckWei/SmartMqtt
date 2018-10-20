@@ -13,8 +13,8 @@ import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.android.service.MqttTraceHandler
 import org.eclipse.paho.client.mqttv3.*
 
-internal open class MqBasePresenter(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
-    private val _TAG: String = MqBasePresenter::javaClass.name
+internal open class MqBase(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
+    private val _TAG: String = MqBase::javaClass.name
     private var wakelock: PowerManager.WakeLock? = null
 
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
@@ -48,8 +48,8 @@ internal open class MqBasePresenter(private val _context: Context) : MqttCallbac
             MqttAndroidClient.Ack.AUTO_ACK
         ).apply {
             setTraceEnabled(MqConfigure.isTrace)
-            setCallback(this@MqBasePresenter)
-            setTraceCallback(this@MqBasePresenter)
+            setCallback(this@MqBase)
+            setTraceCallback(this@MqBase)
         }
     }
 

@@ -18,9 +18,7 @@ class MqConnectionService : Service() {
     internal lateinit var presenter: IConnectionPresenter
     private lateinit var component: ConnectionComponent
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return binder
-    }
+    override fun onBind(intent: Intent?): IBinder? = binder
 
     override fun onCreate() {
         super.onCreate()

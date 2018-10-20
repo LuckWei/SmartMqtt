@@ -132,7 +132,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
 
-    companion object MqMessageCode {
+    private companion object PH {
         private const val CODE_RECONNECT: Int = 10000
 
         private class PresenterHandler(private val presenter: MqConnectionPresenter) :

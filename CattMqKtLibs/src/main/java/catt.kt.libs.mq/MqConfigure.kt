@@ -5,12 +5,6 @@ import android.annotation.SuppressLint
 @SuppressLint("StaticFieldLeak")
 object MqConfigure {
     /**
-     * 需要初始化
-     */
-    @JvmStatic
-    var deviceNo: String = ""
-
-    /**
      * Mqtt client id
      * 连接前需要初始化
      */

@@ -167,7 +167,6 @@ internal open class MqBase(private val _context: Context) : MqttCallbackExtended
     override fun toString(): String {
         return "serverUrl = ${MqConfigure.serverUrl}, " +
                 "clientId = ${MqConfigure.clientId}, " +
-                "deviceNo = ${MqConfigure.deviceNo}, " +
                 "qos = ${MqConfigure.qos}, " +
                 "isCleanSession = ${MqConfigure.isCleanSession}"
     }

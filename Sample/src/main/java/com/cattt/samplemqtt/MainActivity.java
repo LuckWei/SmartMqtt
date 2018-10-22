@@ -25,8 +25,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.subscribeBtn).setOnClickListener(this);
         findViewById(R.id.isConnectedBtn).setOnClickListener(this);
 
-
-        MqConfigure.setDeviceNo("You_Device_NO._or_You_Only_ID");
         MqConfigure.setServerUrl("You Mqtt service url, example: http://200.198.13.7:1883");
         MqConfigure.setUserName("You User Name");
         MqConfigure.setPassword("You Password");

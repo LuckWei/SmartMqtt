@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.*
 import android.util.Log.*
 import catt.kt.libs.mq.listeners.*
+import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
@@ -21,26 +22,26 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
 
     override fun traceDebug(tag: String?, message: String?) {
-        if (isEmptyClient()) return
     }
 
     override fun traceException(tag: String?, message: String?, e: Exception?) {
-        if (isEmptyClient()) return
     }
 
     override fun traceError(tag: String?, message: String?) {
-        if (isEmptyClient()) return
     }
 
     override fun onSuccess(token: IMqttToken?) {
         token ?: return
-        if (isEmptyClient()) return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         i(_TAG, "Mq Operation[$operations] -> Completed.")
         when (operations) {
             MqOperations.CONNECT -> {
-                client?.get()?.setBufferOpts(disOptions)
+                (token.client as MqttAndroidClient).setBufferOpts(disOptions)
+            }
+            MqOperations.DISCONNECT -> token.client.apply {
+                (this@apply as MqttAndroidClient).unregisterResources()
+                setCallback(null)
             }
         }
         releaseWakeLock()
@@ -48,7 +49,6 @@ internal class MqConnectionPresenter constructor(_context: Context) :
 
     override fun onFailure(token: IMqttToken?, ex: Throwable?) {
         token ?: return
-        if (isEmptyClient()) return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         e(_TAG, "Mq Operation[$operations] -> Failed.", ex)
@@ -56,6 +56,10 @@ internal class MqConnectionPresenter constructor(_context: Context) :
             MqOperations.CONNECT -> {
                 removeMessages(CODE_RECONNECT)
                 sendEmptyMessage(CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3))
+            }
+            MqOperations.DISCONNECT -> token.client.apply {
+                (this@apply as MqttAndroidClient).unregisterResources()
+                setCallback(null)
             }
         }
         releaseWakeLock()
@@ -68,19 +72,16 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-        if (isEmptyClient()) return
         serverURI ?: return
         _connectionMonitor.onConnectCompleteOfMessage(reconnect, serverURI)
     }
 
     override fun connectionLost(cause: Throwable?) {
-        if (isEmptyClient()) return
         cause ?: return
         _connectionMonitor.onConnectionLostOfMessage(cause)
     }
 
     override fun messageArrived(topic: String?, message: MqttMessage?) {
-        if (isEmptyClient()) return
         topic ?: return
         message ?: return
         acquireWakeLock()
@@ -91,7 +92,6 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken?) {
-        if (isEmptyClient()) return
         token?.apply {
             _publishDeliveryMonitor.onDeliveryCompleteOfMessage(token.message.payload)
         }

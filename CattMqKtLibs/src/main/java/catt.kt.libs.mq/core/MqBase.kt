@@ -15,7 +15,7 @@ import org.eclipse.paho.client.mqttv3.*
 import java.lang.ref.WeakReference
 
 internal abstract class MqBase(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
-    private val _TAG: String = MqBase::javaClass.name
+    private val _TAG: String = MqBase::class.java.simpleName
     private var wakelock: PowerManager.WakeLock? = null
     internal var client: WeakReference<MqttAndroidClient>? = null
 
@@ -31,6 +31,7 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
             )
         )
         client?.get()?.apply {
+            registerResources(_context)
             setTraceEnabled(MqConfigure.isTrace)
             setCallback(this@MqBase)
             setTraceCallback(this@MqBase)
@@ -68,22 +69,18 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
             }
         } catch (ex: Exception) {
             e(_TAG, "Unable to connect.", ex)
-        } finally {
-            client?.get()?.apply { registerResources(_context) }
         }
     }
 
-    fun disconnect(quiesceTimeout: Long, callback: IMqttActionListener?) {
+    fun disconnect(quiesceTimeout: Long = 1000L * 10, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to disconnect...")
         try {
             client?.get()?.apply {
-                if (!isConnected) return
                 disconnect(quiesceTimeout, MqOperations.DISCONNECT, callback)
             }
         } catch (ex: Exception) {
             e(_TAG, "Unable to disconnect.", ex)
         } finally {
-            client?.get()?.apply { unregisterResources() }
             releaseWakeLock()
         }
     }

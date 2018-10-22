@@ -11,9 +11,6 @@ import catt.kt.libs.mq.MqControl;
 import catt.kt.libs.mq.listeners.OnServiceConnectionListener;
 import catt.kt.libs.mq.listeners.OnSubscribeMessagesListener;
 
-import java.util.concurrent.Executors;
-
-
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnSubscribeMessagesListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -27,9 +24,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.subscribeBtn).setOnClickListener(this);
         findViewById(R.id.isConnectedBtn).setOnClickListener(this);
 
-        MqConfigure.setServerUrl("TCP URL:Hello World");
-        MqConfigure.setUserName("Test.Account");
-        MqConfigure.setPassword("Test.Password");
+//        MqConfigure.setServerUrl("TCP URL:Hello World");
+//        MqConfigure.setUserName("Test.Account");
+//        MqConfigure.setPassword("Test.Password");
+        MqConfigure.setServerUrl("tcp://39.106.117.155:1883");
+        MqConfigure.setUserName("guest");
+        MqConfigure.setPassword("guest");
+
         MqConfigure.setClientId(":Hello.World");
         MqConfigure.setTopics(new String[]{"1A2B3C4D5E6F7G8H"});
 
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
         MqControl.removeOnSubscribeMessagesListener(this);
     }
+
+    private boolean isTest = false;
 
     @Override
     public void onClick(View v) {
@@ -59,8 +62,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Log.e(TAG, "onServiceDisconnected: " + name.getPackageName() + "/" + name.getClassName());
                 }
             });
+//            isTest = true;
+//            Executors.newCachedThreadPool().execute(new Runnable() {
+//                @Override
+//                public void run() {
+//                    while (isTest) {
+//                        final ServiceConnection connection = new ServiceConnection() {
+//                            @Override
+//                            public void onServiceConnected(ComponentName name, IBinder service) {
+//                                Log.i(TAG, "onServiceConnected : packageName = " + name.getPackageName() + "/" + name.getClassName());
+//                            }
+//
+//                            @Override
+//                            public void onServiceDisconnected(ComponentName name) {
+//                                Log.w(TAG, "onServiceDisconnected : packageName = " + name.getPackageName() + "/" + name.getClassName());
+//                            }
+//                        };
+//                        getApplicationContext().bindService(new Intent(getApplicationContext(), MyTestService.class), connection, Context.BIND_AUTO_CREATE);
+//                        try {
+//                            Thread.sleep(100L);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//                        getApplicationContext().unbindService(connection);
+//                    }
+//                }
+//            });
         }
         if (R.id.stopBtn == id) {
+//            isTest = false;
             try {
                 MqControl.unbindService();
             } catch (IllegalArgumentException ex) {

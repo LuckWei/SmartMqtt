@@ -2,6 +2,7 @@ package catt.kt.libs.mq.core
 
 import android.content.ComponentName
 import android.os.IBinder
+import android.util.Log.e
 import catt.kt.libs.mq.listeners.OnServiceConnectionListener
 import catt.kt.libs.mq.wrapper.ServiceConnectionImpl
 import java.lang.ref.WeakReference

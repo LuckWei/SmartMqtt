@@ -6,35 +6,33 @@ import android.os.PowerManager
 import android.util.Log.*
 import catt.kt.libs.mq.MqConfigure
 
-
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.android.service.MqttTraceHandler
 import org.eclipse.paho.client.mqttv3.*
-import java.lang.ref.WeakReference
 
-internal abstract class MqBase(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
-    private val _TAG: String = MqBase::class.java.simpleName
+internal open class BaseMQ(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
+    override fun connectComplete(reconnect: Boolean, serverURI: String?) {}
+
+    override fun messageArrived(topic: String?, message: MqttMessage?) {}
+
+    override fun connectionLost(cause: Throwable?) {}
+
+    override fun deliveryComplete(token: IMqttDeliveryToken?) {}
+
+    override fun traceDebug(tag: String?, message: String?) {}
+
+    override fun traceException(tag: String?, message: String?, e: java.lang.Exception?) {}
+
+    override fun traceError(tag: String?, message: String?) {}
+
+    private val _TAG: String = BaseMQ::class.java.simpleName
     private var wakelock: PowerManager.WakeLock? = null
-    internal var client: WeakReference<MqttAndroidClient>? = null
-
-    init {
-        i(_TAG, "@ Initialize M.Q.T.T client. ${toString()}")
-        client = WeakReference(
-            MqttAndroidClient(
-                _context,
-                MqConfigure.serverUrl,
-                MqConfigure.clientId,
-                MemoryPersistence(),
-                MqttAndroidClient.Ack.AUTO_ACK
-            )
-        )
-        client?.get()?.apply {
-            registerResources(_context)
+    var client: MqttAndroidClient = (_context.applicationContext as MqApp).mqClient
+    set(value) {
+        field = value.apply {
             setTraceEnabled(MqConfigure.isTrace)
-            setCallback(this@MqBase)
-            setTraceCallback(this@MqBase)
+            setCallback(this@BaseMQ)
+            setTraceCallback(this@BaseMQ)
         }
     }
 
@@ -63,7 +61,7 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun connect(callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to connect...")
         try {
-            client?.get()?.apply {
+            client.apply {
                 if (isConnected) return
                 connect(options, MqOperations.CONNECT, callback)
             }
@@ -75,7 +73,7 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun disconnect(quiesceTimeout: Long = 1000L * 10, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to disconnect...")
         try {
-            client?.get()?.apply {
+            client.apply {
                 disconnect(quiesceTimeout, MqOperations.DISCONNECT, callback)
             }
         } catch (ex: Exception) {
@@ -88,7 +86,7 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun publish(topic: String, payload: ByteArray, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to publish...")
         try {
-            client?.get()?.apply {
+            client.apply {
                 if (!isConnected) return
                 publish(topic, payload, MqConfigure.qos, true, MqOperations.PUBLISH, callback)
             }
@@ -100,7 +98,7 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun subscribe(topic: Array<String>, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to subscribe...")
         try {
-            client?.get()?.apply {
+            client.apply {
                 if (!isConnected) return
                 subscribe(topic, getQos(topic.size), MqOperations.SUBSCRIBE, callback)
             }
@@ -112,7 +110,7 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun unsubscribe(topic: Array<String>, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to unsubscribe...")
         try {
-            client?.get()?.apply {
+            client.apply {
                 if (!isConnected) return
                 unsubscribe(topic, MqOperations.UNSUBSCRIBE, callback)
             }

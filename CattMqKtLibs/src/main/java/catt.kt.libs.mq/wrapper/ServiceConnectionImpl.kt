@@ -71,7 +71,7 @@ internal abstract class ServiceConnectionImpl(
                     createExplicitFromImplicitIntent(this@apply, _intent)
                         ?: throw NullPointerException("Intent cannot null."),
                     this@ServiceConnectionImpl,
-                    Context.BIND_AUTO_CREATE or Context.BIND_ABOVE_CLIENT or  Context.BIND_NOT_FOREGROUND
+                    Context.BIND_AUTO_CREATE or Context.BIND_ADJUST_WITH_ACTIVITY
                 )
             }
         }

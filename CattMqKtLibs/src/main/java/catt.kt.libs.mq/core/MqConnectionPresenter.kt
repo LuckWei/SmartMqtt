@@ -14,21 +14,12 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class MqConnectionPresenter constructor(_context: Context) :
-    MqBase(_context), IMqttActionListener, IConnectionPresenter {
+    BaseMQ(_context), IMqttActionListener, IConnectionPresenter {
     private val _TAG: String = MqConnectionPresenter::class.java.simpleName
     private val _handlerWeakR: WeakReference<PresenterHandler> by lazy { WeakReference(PresenterHandler(this@MqConnectionPresenter)) }
     private val _subscribeMessagesMonitor: SubscribeMessagesMonitor by lazy { SubscribeMessagesMonitor.get() }
     private val _publishDeliveryMonitor: PublishDeliveryMonitor by lazy { PublishDeliveryMonitor.get() }
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
-
-    override fun traceDebug(tag: String?, message: String?) {
-    }
-
-    override fun traceException(tag: String?, message: String?, e: Exception?) {
-    }
-
-    override fun traceError(tag: String?, message: String?) {
-    }
 
     override fun onSuccess(token: IMqttToken?) {
         token ?: return
@@ -38,10 +29,6 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         when (operations) {
             MqOperations.CONNECT -> {
                 (token.client as MqttAndroidClient).setBufferOpts(disOptions)
-            }
-            MqOperations.DISCONNECT -> token.client.apply {
-                (this@apply as MqttAndroidClient).unregisterResources()
-                setCallback(null)
             }
         }
         releaseWakeLock()
@@ -57,18 +44,8 @@ internal class MqConnectionPresenter constructor(_context: Context) :
                 removeMessages(CODE_RECONNECT)
                 sendEmptyMessage(CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3))
             }
-            MqOperations.DISCONNECT -> token.client.apply {
-                (this@apply as MqttAndroidClient).unregisterResources()
-                setCallback(null)
-            }
         }
         releaseWakeLock()
-    }
-
-    private fun isEmptyClient(): Boolean {
-        client ?: return true
-        client!!.get() ?: return true
-        return false
     }
 
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
@@ -97,14 +74,11 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         }
     }
 
-    override fun isConnected(): Boolean = client.run {
-        if (isEmptyClient()) return@run false
-        this!!.get()!!.isConnected
-    }
+
+    override fun isConnected(): Boolean = client.isConnected
 
     override fun connect() {
-        if (isEmptyClient()) return
-        _connectionMonitor.onConnectingOfMessage(client!!.get()!!.serverURI)
+        _connectionMonitor.onConnectingOfMessage(client.serverURI)
         connect(this)
     }
 
@@ -143,16 +117,9 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun destroyOwn() {
-        e(_TAG, "### Begin destroy the MQ.client!!!")
-        try {
-            removeCallbacksAndMessages()
-            disconnect()
-        } finally {
-            client?.clear()
-            client = null
-        }
+        removeCallbacksAndMessages()
+        disconnect()
     }
-
 
     private companion object PH {
         private const val CODE_RECONNECT: Int = 10000
@@ -163,7 +130,6 @@ internal class MqConnectionPresenter constructor(_context: Context) :
                     .apply { start() }.looper
             ) {
             override fun handleMessage(msg: Message?) {
-                if (presenter.isEmptyClient()) return
                 msg?.apply {
                     when (what) {
                         CODE_RECONNECT -> if (!presenter.isConnected()) presenter.connect()

@@ -10,13 +10,12 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttMessage
-import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
 internal class MqConnectionPresenter constructor(_context: Context) :
     BaseMQ(_context), IMqttActionListener, IConnectionPresenter {
     private val _TAG: String = MqConnectionPresenter::class.java.simpleName
-    private val _handlerWeakR: WeakReference<PresenterHandler> by lazy { WeakReference(PresenterHandler(this@MqConnectionPresenter)) }
+    private var _handler: PresenterHandler? = PresenterHandler(this@MqConnectionPresenter)
     private val _subscribeMessagesMonitor: SubscribeMessagesMonitor by lazy { SubscribeMessagesMonitor.get() }
     private val _publishDeliveryMonitor: PublishDeliveryMonitor by lazy { PublishDeliveryMonitor.get() }
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
@@ -84,8 +83,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         _connectionMonitor.onConnectingOfMessage(client.serverURI)
         if (isConnectedNetwork) {
             connect(this)
-        }
-        else {
+        } else {
             w(_TAG, "@ Please check the network...")
             _connectionMonitor.onConnectionLostOfMessage(NetworkErrorException("Please check the network"))
             removeMessages(CODE_RECONNECT)
@@ -103,28 +101,28 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     override fun subscribe(topics: Array<String>) = subscribe(topics, this)
 
     private fun sendEmptyMessage(what: Int, delayMillis: Long) {
-        _handlerWeakR.get()?.apply {
+        _handler?.apply {
             sendEmptyMessageDelayed(what, delayMillis)
         }
     }
 
     private fun obtainMessage(what: Int, obj: Any) {
-        _handlerWeakR.get()?.apply {
+        _handler?.apply {
             obtainMessage(what, obj).sendToTarget()
         }
     }
 
     private fun removeMessages(what: Int) {
-        _handlerWeakR.get()?.apply {
+        _handler?.apply {
             removeMessages(what)
         }
     }
 
     private fun removeCallbacksAndMessages() {
-        _handlerWeakR.get()?.apply {
+        _handler?.apply {
             removeCallbacksAndMessages(null)
-            _handlerWeakR.clear()
         }
+        _handler = null
     }
 
     override fun destroyOwn() {

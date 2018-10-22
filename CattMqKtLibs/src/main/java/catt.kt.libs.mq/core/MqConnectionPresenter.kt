@@ -20,34 +20,33 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     private val _subscribeMessagesMonitor: SubscribeMessagesMonitor by lazy { SubscribeMessagesMonitor.get() }
     private val _publishDeliveryMonitor: PublishDeliveryMonitor by lazy { PublishDeliveryMonitor.get() }
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
-    private var whetherDestroyOwn: Boolean = false
 
     override fun traceDebug(tag: String?, message: String?) {
-        if (whetherDestroyOwn) return
+        client ?: return
     }
 
     override fun traceException(tag: String?, message: String?, e: Exception?) {
-        if (whetherDestroyOwn) return
+        client ?: return
     }
 
     override fun traceError(tag: String?, message: String?) {
-        if (whetherDestroyOwn) return
+        client ?: return
     }
 
     override fun onSuccess(token: IMqttToken?) {
-        if (whetherDestroyOwn) return
+        client ?: return
         token ?: return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         i(_TAG, "Mq Operation[$operations] -> Completed.")
         when (operations) {
-            MqOperations.CONNECT -> client.setBufferOpts(disOptions)
+            MqOperations.CONNECT -> client!!.setBufferOpts(disOptions)
         }
         releaseWakeLock()
     }
 
     override fun onFailure(token: IMqttToken?, ex: Throwable?) {
-        if (whetherDestroyOwn) return
+        client ?: return
         token ?: return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
@@ -62,19 +61,19 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-        if (whetherDestroyOwn) return
+        client ?: return
         serverURI ?: return
         _connectionMonitor.onConnectCompleteOfMessage(reconnect, serverURI)
     }
 
     override fun connectionLost(cause: Throwable?) {
-        if (whetherDestroyOwn) return
+        client ?: return
         cause ?: return
         _connectionMonitor.onConnectionLostOfMessage(cause)
     }
 
     override fun messageArrived(topic: String?, message: MqttMessage?) {
-        if (whetherDestroyOwn) return
+        client ?: return
         topic ?: return
         message ?: return
         acquireWakeLock()
@@ -85,16 +84,17 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken?) {
-        if (whetherDestroyOwn) return
+        client ?: return
         token?.apply {
             _publishDeliveryMonitor.onDeliveryCompleteOfMessage(token.message.payload)
         }
     }
 
-    override fun isConnected(): Boolean = client.isConnected
+    override fun isConnected(): Boolean = client.run { this?.isConnected ?: return@run false }
 
     override fun connect() {
-        _connectionMonitor.onConnectingOfMessage(client.serverURI)
+        client ?: return
+        _connectionMonitor.onConnectingOfMessage(client!!.serverURI)
         connect(this)
     }
 
@@ -133,13 +133,12 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun destroyOwn() {
-        e(_TAG, "### Begin close the client.")
+        e(_TAG, "### Begin destroy the MQ.client!!!")
         try {
-            whetherDestroyOwn = true
             removeCallbacksAndMessages()
             disconnect()
         } finally {
-            client.close()
+            client = null
         }
     }
 
@@ -153,7 +152,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
                     .apply { start() }.looper
             ) {
             override fun handleMessage(msg: Message?) {
-                if (presenter.whetherDestroyOwn) return
+                presenter.client ?: return
                 msg?.apply {
                     when (what) {
                         CODE_RECONNECT -> if (!presenter.isConnected()) presenter.connect()

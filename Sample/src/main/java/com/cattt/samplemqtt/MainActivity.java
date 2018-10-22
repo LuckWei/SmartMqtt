@@ -25,10 +25,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.subscribeBtn).setOnClickListener(this);
         findViewById(R.id.isConnectedBtn).setOnClickListener(this);
 
-        MqConfigure.setServerUrl("You Mqtt service url, example: http://200.198.13.7:1883");
-        MqConfigure.setUserName("You User Name");
-        MqConfigure.setPassword("You Password");
-        MqConfigure.setClientId("client id");
+        MqConfigure.setServerUrl("TCP URL:Hello World");
+        MqConfigure.setUserName("Test.Account");
+        MqConfigure.setPassword("Test.Password");
+        MqConfigure.setClientId(":Hello.World");
         MqConfigure.setTopics(new String[]{"1A2B3C4D5E6F7G8H"});
 
 

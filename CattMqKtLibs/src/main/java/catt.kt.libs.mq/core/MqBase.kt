@@ -16,15 +16,18 @@ import org.eclipse.paho.client.mqttv3.*
 internal abstract class MqBase(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
     private val _TAG: String = MqBase::javaClass.name
     private var wakelock: PowerManager.WakeLock? = null
-    val client: MqttAndroidClient by lazy {
+    var client: MqttAndroidClient? = null
+
+    init {
         i(_TAG, "@ Initialize M.Q.T.T client. ${toString()}")
-        MqttAndroidClient(
+        client = MqttAndroidClient(
             _context,
             MqConfigure.serverUrl,
             MqConfigure.clientId,
             MemoryPersistence(),
             MqttAndroidClient.Ack.AUTO_ACK
-        ).apply {
+        )
+        client?.apply {
             setTraceEnabled(MqConfigure.isTrace)
             setCallback(this@MqBase)
             setTraceCallback(this@MqBase)
@@ -56,27 +59,28 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun connect(callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to connect...")
         try {
-            client.run {
-                if (isConnected) return@run
+            client?.apply {
+                if (isConnected) return
                 connect(options, MqOperations.CONNECT, callback)
-                registerResources(_context)
             }
         } catch (ex: Exception) {
             e(_TAG, "Unable to connect.", ex)
+        } finally {
+            client?.apply { registerResources(_context) }
         }
     }
 
     fun disconnect(quiesceTimeout: Long, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to disconnect...")
         try {
-            client.run {
-                if (!isConnected) return@run
-                unregisterResources()
+            client?.apply {
+                if (!isConnected) return
                 disconnect(quiesceTimeout, MqOperations.DISCONNECT, callback)
             }
         } catch (ex: Exception) {
             e(_TAG, "Unable to disconnect.", ex)
         } finally {
+            client?.apply { unregisterResources() }
             releaseWakeLock()
         }
     }
@@ -84,8 +88,8 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun publish(topic: String, payload: ByteArray, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to publish...")
         try {
-            client.run {
-                if (!isConnected) return@run
+            client?.apply {
+                if (!isConnected) return
                 publish(topic, payload, MqConfigure.qos, true, MqOperations.PUBLISH, callback)
             }
         } catch (ex: Exception) {
@@ -96,8 +100,8 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun subscribe(topic: Array<String>, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to subscribe...")
         try {
-            client.run {
-                if (!isConnected) return@run
+            client?.apply {
+                if (!isConnected) return
                 subscribe(topic, getQos(topic.size), MqOperations.SUBSCRIBE, callback)
             }
         } catch (ex: MqttException) {
@@ -108,8 +112,8 @@ internal abstract class MqBase(private val _context: Context) : MqttCallbackExte
     fun unsubscribe(topic: Array<String>, callback: IMqttActionListener?) {
         i(_TAG, "@ Start trying to unsubscribe...")
         try {
-            client.run {
-                if (!isConnected) return@run
+            client?.apply {
+                if (!isConnected) return
                 unsubscribe(topic, MqOperations.UNSUBSCRIBE, callback)
             }
         } catch (ex: Exception) {

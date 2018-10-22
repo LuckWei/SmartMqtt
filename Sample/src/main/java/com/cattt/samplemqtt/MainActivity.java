@@ -8,10 +8,11 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import catt.kt.libs.mq.MqConfigure;
 import catt.kt.libs.mq.MqControl;
+import catt.kt.libs.mq.listeners.OnPublishDeliveryListener;
 import catt.kt.libs.mq.listeners.OnServiceConnectionListener;
 import catt.kt.libs.mq.listeners.OnSubscribeMessagesListener;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnSubscribeMessagesListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnSubscribeMessagesListener, OnPublishDeliveryListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     @Override
@@ -34,13 +35,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         MqConfigure.setClientId(":Hello.World");
         MqConfigure.setTopics(new String[]{"1A2B3C4D5E6F7G8H"});
 
-
+        MqControl.addOnPublishDeliveryListener(this);
         MqControl.addOnSubscribeMessagesListener(this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        MqControl.removeOnPublishDeliveryListener(this);
         MqControl.removeOnSubscribeMessagesListener(this);
     }
 
@@ -115,5 +117,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onSubscribeMessage(String topic, int id, byte[] payload, int qos, boolean repeated, boolean retained) {
         Log.e(TAG, String.format("topic = %s, message = %s", topic, new String(payload)));
+    }
+
+    @Override
+    public void onDeliveryComplete(byte[] payload) {
+        Log.e(TAG, String.format("message = %s", new String(payload)));
     }
 }

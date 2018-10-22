@@ -31,7 +31,11 @@ class MqConnectionService : Service() {
     }
 
     override fun onDestroy() {
-        presenter.destroyOwn()
-        super.onDestroy()
+        try {
+            presenter.destroyOwn()
+            super.onDestroy()
+        } finally {
+            System.runFinalization()
+        }
     }
 }

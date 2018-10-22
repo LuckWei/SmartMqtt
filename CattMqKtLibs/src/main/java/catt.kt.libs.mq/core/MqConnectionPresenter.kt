@@ -2,8 +2,7 @@ package catt.kt.libs.mq.core
 
 import android.content.Context
 import android.os.*
-import android.util.Log.e
-import android.util.Log.i
+import android.util.Log.*
 import catt.kt.libs.mq.listeners.*
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
@@ -22,32 +21,34 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
 
     override fun traceDebug(tag: String?, message: String?) {
-        client ?: return
+        if (isEmptyClient()) return
     }
 
     override fun traceException(tag: String?, message: String?, e: Exception?) {
-        client ?: return
+        if (isEmptyClient()) return
     }
 
     override fun traceError(tag: String?, message: String?) {
-        client ?: return
+        if (isEmptyClient()) return
     }
 
     override fun onSuccess(token: IMqttToken?) {
-        client ?: return
         token ?: return
+        if (isEmptyClient()) return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         i(_TAG, "Mq Operation[$operations] -> Completed.")
         when (operations) {
-            MqOperations.CONNECT -> client!!.setBufferOpts(disOptions)
+            MqOperations.CONNECT -> {
+                client?.get()?.setBufferOpts(disOptions)
+            }
         }
         releaseWakeLock()
     }
 
     override fun onFailure(token: IMqttToken?, ex: Throwable?) {
-        client ?: return
         token ?: return
+        if (isEmptyClient()) return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         e(_TAG, "Mq Operation[$operations] -> Failed.", ex)
@@ -60,20 +61,26 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         releaseWakeLock()
     }
 
+    private fun isEmptyClient(): Boolean {
+        client ?: return true
+        client!!.get() ?: return true
+        return false
+    }
+
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-        client ?: return
+        if (isEmptyClient()) return
         serverURI ?: return
         _connectionMonitor.onConnectCompleteOfMessage(reconnect, serverURI)
     }
 
     override fun connectionLost(cause: Throwable?) {
-        client ?: return
+        if (isEmptyClient()) return
         cause ?: return
         _connectionMonitor.onConnectionLostOfMessage(cause)
     }
 
     override fun messageArrived(topic: String?, message: MqttMessage?) {
-        client ?: return
+        if (isEmptyClient()) return
         topic ?: return
         message ?: return
         acquireWakeLock()
@@ -84,17 +91,20 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken?) {
-        client ?: return
+        if (isEmptyClient()) return
         token?.apply {
             _publishDeliveryMonitor.onDeliveryCompleteOfMessage(token.message.payload)
         }
     }
 
-    override fun isConnected(): Boolean = client.run { this?.isConnected ?: return@run false }
+    override fun isConnected(): Boolean = client.run {
+        if (isEmptyClient()) return@run false
+        this!!.get()!!.isConnected
+    }
 
     override fun connect() {
-        client ?: return
-        _connectionMonitor.onConnectingOfMessage(client!!.serverURI)
+        if (isEmptyClient()) return
+        _connectionMonitor.onConnectingOfMessage(client!!.get()!!.serverURI)
         connect(this)
     }
 
@@ -138,6 +148,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
             removeCallbacksAndMessages()
             disconnect()
         } finally {
+            client?.clear()
             client = null
         }
     }
@@ -152,7 +163,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
                     .apply { start() }.looper
             ) {
             override fun handleMessage(msg: Message?) {
-                presenter.client ?: return
+                if (presenter.isEmptyClient()) return
                 msg?.apply {
                     when (what) {
                         CODE_RECONNECT -> if (!presenter.isConnected()) presenter.connect()

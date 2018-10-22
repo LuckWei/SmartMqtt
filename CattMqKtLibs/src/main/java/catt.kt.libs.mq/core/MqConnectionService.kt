@@ -22,7 +22,6 @@ class MqConnectionService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        e(_TAG, "##################   onCreate ${hashCode()}")
         component = DaggerConnectionComponent.builder()
             .mqAppComponent((application as MqApp).appComponent)
             .connectionModule(ConnectionModule())

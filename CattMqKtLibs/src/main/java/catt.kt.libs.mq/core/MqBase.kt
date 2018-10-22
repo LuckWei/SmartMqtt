@@ -13,31 +13,9 @@ import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.android.service.MqttTraceHandler
 import org.eclipse.paho.client.mqttv3.*
 
-internal open class MqBase(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
+internal abstract class MqBase(private val _context: Context) : MqttCallbackExtended, MqttTraceHandler {
     private val _TAG: String = MqBase::javaClass.name
     private var wakelock: PowerManager.WakeLock? = null
-
-    override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-    }
-
-    override fun messageArrived(topic: String?, message: MqttMessage?) {
-    }
-
-    override fun connectionLost(cause: Throwable?) {
-    }
-
-    override fun deliveryComplete(token: IMqttDeliveryToken?) {
-    }
-
-    override fun traceDebug(tag: String?, message: String?) {
-    }
-
-    override fun traceException(tag: String?, message: String?, e: java.lang.Exception?) {
-    }
-
-    override fun traceError(tag: String?, message: String?) {
-    }
-
     val client: MqttAndroidClient by lazy {
         i(_TAG, "@ Initialize M.Q.T.T client. ${toString()}")
         MqttAndroidClient(

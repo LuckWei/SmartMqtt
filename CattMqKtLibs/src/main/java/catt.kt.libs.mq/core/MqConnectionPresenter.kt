@@ -9,6 +9,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttMessage
+import java.lang.Exception
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
@@ -21,10 +22,21 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     private val _connectionMonitor: ConnectionMonitor by lazy { ConnectionMonitor.get() }
     private var whetherDestroyOwn: Boolean = false
 
+    override fun traceDebug(tag: String?, message: String?) {
+        if (whetherDestroyOwn) return
+    }
+
+    override fun traceException(tag: String?, message: String?, e: Exception?) {
+        if (whetherDestroyOwn) return
+    }
+
+    override fun traceError(tag: String?, message: String?) {
+        if (whetherDestroyOwn) return
+    }
 
     override fun onSuccess(token: IMqttToken?) {
-        token ?: return
         if (whetherDestroyOwn) return
+        token ?: return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         i(_TAG, "Mq Operation[$operations] -> Completed.")
@@ -35,8 +47,8 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun onFailure(token: IMqttToken?, ex: Throwable?) {
-        token ?: return
         if (whetherDestroyOwn) return
+        token ?: return
         acquireWakeLock()
         val operations: MqOperations = userContext2MqOperations(token)
         e(_TAG, "Mq Operation[$operations] -> Failed.", ex)
@@ -50,19 +62,19 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun connectComplete(reconnect: Boolean, serverURI: String?) {
-        super.connectComplete(reconnect, serverURI)
+        if (whetherDestroyOwn) return
         serverURI ?: return
         _connectionMonitor.onConnectCompleteOfMessage(reconnect, serverURI)
     }
 
     override fun connectionLost(cause: Throwable?) {
-        super.connectionLost(cause)
+        if (whetherDestroyOwn) return
         cause ?: return
         _connectionMonitor.onConnectionLostOfMessage(cause)
     }
 
     override fun messageArrived(topic: String?, message: MqttMessage?) {
-        super.messageArrived(topic, message)
+        if (whetherDestroyOwn) return
         topic ?: return
         message ?: return
         acquireWakeLock()
@@ -73,7 +85,7 @@ internal class MqConnectionPresenter constructor(_context: Context) :
     }
 
     override fun deliveryComplete(token: IMqttDeliveryToken?) {
-        super.deliveryComplete(token)
+        if (whetherDestroyOwn) return
         token?.apply {
             _publishDeliveryMonitor.onDeliveryCompleteOfMessage(token.message.payload)
         }

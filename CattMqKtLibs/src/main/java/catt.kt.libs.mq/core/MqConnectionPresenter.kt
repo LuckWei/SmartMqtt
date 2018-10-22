@@ -1,5 +1,6 @@
 package catt.kt.libs.mq.core
 
+import android.accounts.NetworkErrorException
 import android.content.Context
 import android.os.*
 import android.util.Log.*
@@ -9,7 +10,6 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttMessage
-import java.lang.Exception
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 
@@ -29,6 +29,10 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         when (operations) {
             MqOperations.CONNECT -> {
                 (token.client as MqttAndroidClient).setBufferOpts(disOptions)
+            }
+            MqOperations.DISCONNECT -> {
+                i(_TAG, "Mq Operation[$operations]: Begin MQ.client.close()")
+                token.client.close()
             }
         }
         releaseWakeLock()
@@ -74,12 +78,19 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         }
     }
 
-
     override fun isConnected(): Boolean = client.isConnected
 
     override fun connect() {
         _connectionMonitor.onConnectingOfMessage(client.serverURI)
-        connect(this)
+        if (isConnectedNetwork) {
+            connect(this)
+        }
+        else {
+            w(_TAG, "@ Please check the network...")
+            _connectionMonitor.onConnectionLostOfMessage(NetworkErrorException("Please check the network"))
+            removeMessages(CODE_RECONNECT)
+            sendEmptyMessage(CODE_RECONNECT, TimeUnit.SECONDS.toMillis(3))
+        }
     }
 
     override fun disconnect(quiesceTimeout: Long) = disconnect(quiesceTimeout, this)

@@ -27,14 +27,18 @@ internal open class BaseMQ(private val _context: Context) : MqttCallbackExtended
 
     private val _TAG: String = BaseMQ::class.java.simpleName
     private var wakelock: PowerManager.WakeLock? = null
+
+    val isConnectedNetwork: Boolean
+        get() = (_context.applicationContext as MqApp).whetherConnectedNetwork
+
     var client: MqttAndroidClient = (_context.applicationContext as MqApp).mqClient
-    set(value) {
-        field = value.apply {
-            setTraceEnabled(MqConfigure.isTrace)
-            setCallback(this@BaseMQ)
-            setTraceCallback(this@BaseMQ)
+        set(value) {
+            field = value.apply {
+                setTraceEnabled(MqConfigure.isTrace)
+                setCallback(this@BaseMQ)
+                setTraceCallback(this@BaseMQ)
+            }
         }
-    }
 
     val options: MqttConnectOptions by lazy {
         MqttConnectOptions().apply {

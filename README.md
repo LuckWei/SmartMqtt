@@ -15,7 +15,7 @@ allprojects {
 Step 2. Add the dependency
 ```gradle
 dependencies {
-	        implementation 'com.github.LuckWei:SmartMqtt:Tag'
+	        implementation 'com.github.LuckWei:SmartMqtt:1.0'
 	}
 
 ```

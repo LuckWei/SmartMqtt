@@ -1,4 +1,7 @@
-[![](https://jitpack.io/v/LuckyCattZW/SmartMqtt.svg)](https://jitpack.io/#LuckyCattZW/SmartMqtt)
+[![](https://jitpack.io/v/LuckyCattZW/SmartMqtt.svg)](https://jitpack.io/#LuckyCattZW/SmartMqtt/1.0)
+
+
+
 # TemporaryMQTT
 对PahoMQTT进行封装
 

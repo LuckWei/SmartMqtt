@@ -5,7 +5,7 @@
 # SmartMqtt
 对PahoMQTT进行封装
 
-####1.依赖引用
+#### 1.依赖引用
 Step 1. Add the JitPack repository to your build file 
 Add it in your root build.gradle at the end of repositories:
 ```gradle

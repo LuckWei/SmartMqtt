@@ -25,8 +25,9 @@ Step 2. Add the dependency
 ```
 
 
-###About Eclipse Paho - MQTT
+### About Eclipse Paho - MQTT
 [@Eclipse Paho[Website]](http://www.eclipse.org/paho/)
+
 [@Eclipse Paho - MQTT for Android[Github]](https://github.com/eclipse/paho.mqtt.android)
 
 

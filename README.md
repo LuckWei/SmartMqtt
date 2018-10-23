@@ -1,4 +1,9 @@
-# TemporaryMQTT
+[![](https://jitpack.io/v/LuckyCattZW/SmartMqtt.svg)](https://jitpack.io/#LuckyCattZW/SmartMqtt/1.0)
+
+
+
+# SmartMqtt
+
 对PahoMQTT进行封装
 
 
@@ -15,7 +20,7 @@ Add it in your root build.gradle at the end of repositories:
 Step 2. Add the dependency
 ```gradle
 	dependencies {
-	        implementation 'com.github.LuckWei:SmartMqtt:1.0'
+	        implementation 'com.github.LuckyCattZW:SmartMqtt:1.0'
 	}
 
 ```

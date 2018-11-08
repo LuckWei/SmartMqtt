@@ -3,7 +3,6 @@ package catt.kt.libs.mq.core
 import android.app.Service
 import android.content.Intent
 import android.os.*
-import android.util.Log.e
 import catt.kt.libs.mq.di.components.ConnectionComponent
 import catt.kt.libs.mq.di.components.DaggerConnectionComponent
 import catt.kt.libs.mq.di.modules.ConnectionModule
@@ -27,7 +26,6 @@ class MqConnectionService : Service() {
             .connectionModule(ConnectionModule())
             .build()
         component.inject(this@MqConnectionService)
-
     }
 
     override fun onDestroy() {

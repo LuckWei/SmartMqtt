@@ -10,6 +10,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttMessage
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 internal class MqConnectionPresenter constructor(_context: Context) :
@@ -65,9 +66,11 @@ internal class MqConnectionPresenter constructor(_context: Context) :
         topic ?: return
         message ?: return
         acquireWakeLock()
-        _subscribeMessagesMonitor.onSubscribeMessageOfMessage(
-            topic, message.id, message.payload, message.qos, message.isDuplicate, message.isRetained
-        )
+        Executors.newSingleThreadExecutor().execute {
+            _subscribeMessagesMonitor.onSubscribeMessageOfMessage(
+                topic, message.id, message.payload, message.qos, message.isDuplicate, message.isRetained
+            )
+        }
         releaseWakeLock()
     }
 
